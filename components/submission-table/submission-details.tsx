@@ -134,7 +134,7 @@ export function SubmissionDetails({ submission, open, onOpenChange }: Submission
           <div className="space-y-2 border-t pt-4">
             <p className="text-xs font-medium text-muted-foreground">Submission Data</p>
             {submission.data.postUrl && (
-              <div className="w-md">
+              <div className="md:w-md w-48">
                 <p className="text-xs text-muted-foreground">Post URL</p>
                 <a href={submission.data.postUrl} target="_blank" rel="noreferrer"
                   className="text-xs text-blue-600 hover:underline truncate block">
