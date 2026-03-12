@@ -9,13 +9,14 @@ import { RecentTasks } from '@/components/recent-tasks';
 import { MetricsGrid } from '@/components/metrics-grid';
 import { Unauthenticated } from '@/components/unauthenticated';
 import Loading from '@/components/loader';
+import WorkerMetrics from '@/components/worker-metrics';
 
- export default function DashboardPage() {
-  const { user,  isLoading } = useAuth();
-  if (isLoading) return <Loading/>
-  if (!user) return <Unauthenticated/>
+export default function DashboardPage() {
+  const { user, isLoading } = useAuth();
+  if (isLoading) return <Loading />
+  if (!user) return <Unauthenticated />
   const isAdmin = user.role === 'admin';
-  
+
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -25,9 +26,13 @@ import Loading from '@/components/loader';
           {isAdmin ? 'Manage tasks and review submissions' : 'Complete tasks and earn rewards'}
         </p>
       </div>
-
+      {
+        !isAdmin && <WorkerMetrics user={user} />
+      }
       {/* Metrics Grid */}
-      <MetricsGrid/>
+      {
+        isAdmin && <MetricsGrid />
+      }
       {/* Quick Actions */}
 
       {isAdmin && (
@@ -44,6 +49,12 @@ import Loading from '@/components/loader';
               <Link href="/submissions">
                 <Button variant="outline" className="w-full justify-between">
                   <span>Review Submissions</span>
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              </Link>
+              <Link href="/users">
+                <Button variant="outline" className="w-full justify-between">
+                  <span>Manage Users</span>
                   <ArrowRight className="h-4 w-4" />
                 </Button>
               </Link>
@@ -70,7 +81,7 @@ import Loading from '@/components/loader';
         </div>
       )}
       {/* Recent Tasks */}
-      <RecentTasks isAdmin={isAdmin}/>
+      <RecentTasks isAdmin={isAdmin} />
     </div>
   )
 }

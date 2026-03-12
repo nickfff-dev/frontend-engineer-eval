@@ -38,7 +38,7 @@ function SubmissionRowSkeleton() {
   )
 }
 
-export default function Performance({ user }: { user: User }) {
+export default function WorkerMetrics({ user }: { user: User }) {
   const { data: allSubmissions, isPending: subsPending } = useSubmissions(
     [{ field: 'workerId', value: user.id }]
   )
@@ -173,7 +173,7 @@ export default function Performance({ user }: { user: User }) {
       {!isPending && stats && (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           {[
-            { label: 'Approved', count: stats.approved.length, icon: <CheckCircle2 className="h-4 w-4 text-emerald-600" />, bg: 'bg-emerald-50' },
+
             { label: 'Pending', count: stats.pending.length, icon: <Clock className="h-4 w-4 text-sky-600" />, bg: 'bg-sky-50' },
             { label: 'Rejected', count: stats.rejected.length, icon: <XCircle className="h-4 w-4 text-destructive" />, bg: 'bg-red-50' },
           ].map((item) => (

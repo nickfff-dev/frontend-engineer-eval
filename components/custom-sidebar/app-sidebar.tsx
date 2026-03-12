@@ -28,7 +28,6 @@ const ADMIN_ROUTES = [
   { title: 'Task Management', url: '/tasks/management', icon: ListTodo },
   { title: 'Submissions', url: '/submissions', icon: ClipboardCheck },
   { title: 'User Management', url: '/users', icon: Users },
-  { title: 'Performance', url: '/metrics', icon: TrendingUpIcon },
   { title: 'Feed', url: '/feed', icon: DatabaseSearchIcon },
   { title: 'Settings', url: '/settings', icon: Settings },
 ]
@@ -36,7 +35,6 @@ const ADMIN_ROUTES = [
 const WORKER_ROUTES = [
   { title: 'Dashboard', url: '/dashboard', icon: LayoutDashboard },
   { title: 'Tasks', url: '/feed', icon: ListTodo },
-  { title: 'Performance', url: '/metrics', icon: TrendingUpIcon },  
   { title: 'Settings', url: '/settings', icon: Settings },
 ]
 

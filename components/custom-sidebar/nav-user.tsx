@@ -79,12 +79,14 @@ export function NavUser({
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem>
-                <a href="/settings">
+              <a href="/settings">
+                <DropdownMenuItem>
+
                   <BadgeCheck />
                   Account
-                </a>
-              </DropdownMenuItem>
+
+                </DropdownMenuItem>
+              </a>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem
