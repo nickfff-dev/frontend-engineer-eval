@@ -95,6 +95,10 @@ export default function TaskTable() {
             columnVisibility,
             rowSelection,
         },
+        initialState: {
+
+            pagination: { pageSize: 6 }
+        }
     });
 
     if (isPending) return <SkeletonTable />;

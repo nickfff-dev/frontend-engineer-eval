@@ -94,6 +94,10 @@ export default function SubmissionTable() {
     onColumnVisibilityChange: setColumnVisibility,
     onRowSelectionChange: setRowSelection,
     state: { sorting, columnFilters, columnVisibility, rowSelection },
+    initialState: {
+
+      pagination: { pageSize: 6 }
+  }
   });
 
   if (isPending) return <SkeletonTable />;
