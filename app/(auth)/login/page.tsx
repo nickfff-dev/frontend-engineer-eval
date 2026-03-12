@@ -113,7 +113,7 @@ export default function LoginPage() {
               <strong>Worker:</strong> sarah@example.com
             </p>
             <p className="text-xs text-blue-800">
-              <strong>Password:</strong> password1
+              <strong>Password:</strong> password2
             </p>
           </div>
         </div>
