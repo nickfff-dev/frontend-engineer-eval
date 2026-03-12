@@ -38,6 +38,7 @@ import type { User, UserRole } from "@/types/types";
 import { SkeletonTable } from "../table-skeleton";
 import { ErrorOccurred } from "../error-view";
 import { toast } from "sonner";
+import { DeleteAlert } from "../delete-modal";
 
 const STATUS_OPTIONS: User["status"][] = ["active", "inactive"];
 const ROLE_OPTIONS: UserRole[] = ["admin", "worker"];
@@ -50,22 +51,37 @@ export default function UserTable() {
 
   const [selectedUser, setSelectedUser] = React.useState<User | null>(null);
   const [detailsOpen, setDetailsOpen] = React.useState(false);
+  const [deleteTarget, setDeleteTarget] = React.useState<User | null>(null)
+  const [deleteOpen, setDeleteOpen] = React.useState(false)
 
   const handleView = React.useCallback((user: User) => {
     setSelectedUser(user);
     setDetailsOpen(true);
   }, []);
 
+  const handleDeleteClick = React.useCallback((user: User) => {
+    setDeleteTarget(user)
+    setDeleteOpen(true)
+  }, [])
+
   const { mutate: deleteUser } = useDeleteUser();
 
-  const handleDelete = React.useCallback((id: string) => {
-    deleteUser(id, {
-      onSuccess: () => toast.success("Task deleted"),
+  const handleDeleteConfirm = React.useCallback(() => {
+    if (!deleteTarget) return
+    deleteUser(deleteTarget.id, {
+      onSuccess: () => {
+        toast.success("Task deleted")
+        setDeleteOpen(false)
+        setDeleteTarget(null)
+      },
       onError: () => toast.error("Failed to delete task"),
-    });
-  }, [deleteUser]);
+    })
+  }, [deleteTarget, deleteUser])
 
-  const columns = React.useMemo(() => buildColumns(handleView, handleDelete), [handleView, handleDelete]);
+  const columns = React.useMemo(
+    () => buildColumns(handleView, handleDeleteClick),
+    [handleView, handleDeleteClick]
+  )
 
   const { data, isPending, isError } = useUsers();
 
@@ -84,7 +100,7 @@ export default function UserTable() {
     initialState: {
 
       pagination: { pageSize: 6 }
-  }
+    }
   });
 
   if (isPending) return <SkeletonTable />;
@@ -253,6 +269,13 @@ export default function UserTable() {
         user={selectedUser}
         open={detailsOpen}
         onOpenChange={setDetailsOpen}
+      />
+      <DeleteAlert
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        onConfirm={handleDeleteConfirm}
+        title="Delete Task?"
+        description={`"${deleteTarget?.name}" will be permanently deleted along with all its submissions.`}
       />
     </div>
   );

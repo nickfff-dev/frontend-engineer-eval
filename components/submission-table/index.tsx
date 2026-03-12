@@ -39,7 +39,7 @@ import { SkeletonTable } from "../table-skeleton";
 import { ErrorOccurred } from "../error-view";
 import { toast } from "sonner";
 import { useEditTask, useTasks } from "@/hooks/use-tasks";
-import { getTasks } from "@/lib/mock-data";
+import { DeleteAlert } from "../delete-modal";
 
 const STATUS_OPTIONS: SubmissionStatus[] = ["pending", "approved", "rejected"];
 
@@ -50,6 +50,8 @@ export default function SubmissionTable() {
   const [rowSelection, setRowSelection] = React.useState({});
   const [selectedSubmission, setSelectedSubmission] = React.useState<Submission | null>(null);
   const [detailsOpen, setDetailsOpen] = React.useState(false);
+  const [deleteOpen, setDeleteOpen] = React.useState(false)
+  const [deleteTarget, setDeleteTarget] = React.useState<Submission | null>(null)
 
 
   const { data: relatedTaskData } = useTasks([{ field: 'id', value: selectedSubmission?.taskId }]);
@@ -60,10 +62,15 @@ export default function SubmissionTable() {
     setSelectedSubmission(submission);
     setDetailsOpen(true);
   }, []);
+  const handleDeleteClick = React.useCallback((submission: Submission) => {
+    setDeleteTarget(submission)
+    setDeleteOpen(true)
+  }, [])
 
-  const handleDelete = React.useCallback((submission: Submission) => {
+  const handleDeleteConfirm = React.useCallback(() => {
+    if(!deleteTarget) return;
     const relatedTask = relatedTaskData?.[0];
-    deleteSubmission(submission.id, {
+    deleteSubmission(deleteTarget.id, {
       onSuccess: () => {
         if (relatedTask) {
           editTask({
@@ -75,10 +82,10 @@ export default function SubmissionTable() {
       },
       onError: () => toast.error("Failed to delete submission"),
     });
-  }, [deleteSubmission, editTask, selectedSubmission]);
+  }, [deleteTarget, deleteSubmission, editTask])
 
 
-  const columns = React.useMemo(() => buildColumns(handleView, handleDelete), [handleView, handleDelete]);
+  const columns = React.useMemo(() => buildColumns(handleView, handleDeleteClick), [handleView, handleDeleteClick]);
 
   const { data, isPending, isError } = useSubmissions();
 
@@ -239,6 +246,13 @@ export default function SubmissionTable() {
         submission={selectedSubmission}
         open={detailsOpen}
         onOpenChange={setDetailsOpen}
+      />
+       <DeleteAlert
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        onConfirm={handleDeleteConfirm}
+        title="Delete Submission?"
+        description={`"Submission with ID ${deleteTarget?.id}" will be permanently deleted.`}
       />
     </div>
   );

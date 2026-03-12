@@ -19,7 +19,7 @@ const statusBadgeVariant: Record<
 
 export function buildColumns(
   onView: (task: Task) => void,
-  onDelete: (id: string) => void
+  onDelete: (task: Task) => void
 ): ColumnDef<Task>[] {
   return [
     {
@@ -154,7 +154,7 @@ export function buildColumns(
                 <Eye className="mr-2 h-4 w-4" /> View Details
               </DropdownMenuItem>
               <DropdownMenuItem
-                onClick={() => onDelete(task.id)}
+                onClick={() => onDelete(task)}
                 className="text-destructive focus:text-destructive">
                 <Trash2 className="mr-2 h-4 w-4" /> Delete Task
               </DropdownMenuItem>

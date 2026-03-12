@@ -38,6 +38,7 @@ import { useDeleteTask, useTasks } from "@/hooks/use-tasks";
 import { SkeletonTable } from "../table-skeleton";
 import { ErrorOccurred } from "../error-view";
 import { toast } from "sonner";
+import { DeleteAlert } from "../delete-modal";
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 const STATUS_OPTIONS = ["active", "completed", "archived"] as const;
@@ -62,14 +63,30 @@ export default function TaskTable() {
 
     const { mutate: deleteTask } = useDeleteTask();
 
-    const handleDelete = React.useCallback((id: string) => {
-        deleteTask(id, {
-            onSuccess: () => toast.success("Task deleted"),
-            onError: () => toast.error("Failed to delete task"),
-        });
-    }, [deleteTask]);
+    const [deleteTarget, setDeleteTarget] = React.useState<Task | null>(null)
+    const [deleteOpen, setDeleteOpen] = React.useState(false)
 
-    const columns = React.useMemo(() => buildColumns(handleView, handleDelete), [handleView, handleDelete]);
+    const handleDeleteClick = React.useCallback((task: Task) => {
+        setDeleteTarget(task)
+        setDeleteOpen(true)
+    }, [])
+
+    const handleDeleteConfirm = React.useCallback(() => {
+        if (!deleteTarget) return
+        deleteTask(deleteTarget.id, {
+            onSuccess: () => {
+                toast.success("Task deleted")
+                setDeleteOpen(false)
+                setDeleteTarget(null)
+            },
+            onError: () => toast.error("Failed to delete task"),
+        })
+    }, [deleteTarget, deleteTask])
+
+    const columns = React.useMemo(
+        () => buildColumns(handleView, handleDeleteClick),
+        [handleView, handleDeleteClick]
+    )
 
     // ── derive unique type options from data ─────────────────────────────────────
     const typeOptions = React.useMemo<string[]>(() => {
@@ -268,6 +285,13 @@ export default function TaskTable() {
                 task={selectedTask}
                 open={detailsOpen}
                 onOpenChange={setDetailsOpen}
+            />
+            <DeleteAlert
+                open={deleteOpen}
+                onOpenChange={setDeleteOpen}
+                onConfirm={handleDeleteConfirm}
+                title="Delete Task?"
+                description={`Task "${deleteTarget?.title}" will be permanently deleted along with all its submissions.`}
             />
         </div>
     );

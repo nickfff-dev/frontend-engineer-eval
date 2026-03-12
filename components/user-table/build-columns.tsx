@@ -21,7 +21,7 @@ const statusVariant: Record<User["status"], "default" | "secondary"> = {
 
 export function buildColumns(
   onView: (user: User) => void,
-  onDelete: (id: string) => void
+  onDelete: (user: User) => void
 ): ColumnDef<User>[] {
   return [
     {
@@ -152,7 +152,7 @@ export function buildColumns(
                 <Eye className="mr-2 h-4 w-4" /> View Details
               </DropdownMenuItem>
               <DropdownMenuItem
-                onClick={() => onDelete(user.id)}
+                onClick={() => onDelete(user)}
                 className="text-destructive focus:text-destructive">
                 <Trash2 className="mr-2 h-4 w-4" /> Delete User
               </DropdownMenuItem>
