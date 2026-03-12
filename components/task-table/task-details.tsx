@@ -73,7 +73,9 @@ export function TaskDetails({ task, open, onOpenChange }: TaskDetailsProps) {
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>{task.title}</DialogTitle>
-          <DialogDescription>{task.description}</DialogDescription>
+          <DialogDescription>{task.description}<br />
+            Campaign: {task.campaignId}
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">

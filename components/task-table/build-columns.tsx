@@ -73,6 +73,15 @@ export function buildColumns(
       },
     },
     {
+      accessorKey: "campaignId",
+      header: "Campaign ID",
+      cell: ({ row }) => {
+        return (
+          <p>{row.getValue('campaignId')}</p>
+        );
+      },
+    },
+    {
       accessorKey: "amount",
       header: ({ column }) => (
         <Button

@@ -31,7 +31,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useDeleteUser, useUsers } from "@/hooks/use-users";
+import { useDeleteUser, useEditUser, useUsers } from "@/hooks/use-users";
 import { buildColumns } from "./build-columns";
 import { UserDetails } from "./user-details";
 import type { User, UserRole } from "@/types/types";
@@ -39,6 +39,8 @@ import { SkeletonTable } from "../table-skeleton";
 import { ErrorOccurred } from "../error-view";
 import { toast } from "sonner";
 import { DeleteAlert } from "../delete-modal";
+import { UserBulkEditBar } from "../bulk-edit-bar";
+
 
 const STATUS_OPTIONS: User["status"][] = ["active", "inactive"];
 const ROLE_OPTIONS: UserRole[] = ["admin", "worker"];
@@ -53,6 +55,7 @@ export default function UserTable() {
   const [detailsOpen, setDetailsOpen] = React.useState(false);
   const [deleteTarget, setDeleteTarget] = React.useState<User | null>(null)
   const [deleteOpen, setDeleteOpen] = React.useState(false)
+  const [isBulkPending, setIsBulkPending] = React.useState(false);
 
   const handleView = React.useCallback((user: User) => {
     setSelectedUser(user);
@@ -65,6 +68,7 @@ export default function UserTable() {
   }, [])
 
   const { mutate: deleteUser } = useDeleteUser();
+  const { mutateAsync: editUser } = useEditUser();
 
   const handleDeleteConfirm = React.useCallback(() => {
     if (!deleteTarget) return
@@ -102,7 +106,28 @@ export default function UserTable() {
       pagination: { pageSize: 6 }
     }
   });
+  const selectedRows = table.getFilteredSelectedRowModel().rows;
 
+  const handleBulkApply = React.useCallback(
+    async (changes: { role?: UserRole; status?: User["status"] }) => {
+      if (!selectedRows.length) return
+      setIsBulkPending(true)
+      try {
+        await Promise.all(
+          selectedRows.map((row) =>
+            editUser({ id: row.original.id, data: changes })
+          )
+        )
+        toast.success(`Updated ${selectedRows.length} user${selectedRows.length > 1 ? "s" : ""}`)
+        table.resetRowSelection()
+      } catch {
+        toast.error("Some updates failed")
+      } finally {
+        setIsBulkPending(false)
+      }
+    },
+    [selectedRows, editUser, table]
+  )
   if (isPending) return <SkeletonTable />;
   if (isError) return <ErrorOccurred />;
 
@@ -198,7 +223,14 @@ export default function UserTable() {
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-
+      {selectedRows.length > 0 && (
+        <UserBulkEditBar
+          selectedCount={selectedRows.length}
+          onApply={handleBulkApply}
+          onClear={() => table.resetRowSelection()}
+          isPending={isBulkPending}
+        />
+      )}
       {/* Table */}
       <div className="rounded-md border">
         <Table>

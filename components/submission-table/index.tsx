@@ -31,7 +31,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useDeleteSubmission, useSubmissions } from "@/hooks/use-submissions";
+import { useDeleteSubmission, useEditSubmission, useSubmissions } from "@/hooks/use-submissions";
 import { buildColumns } from "./build-columns";
 import { SubmissionDetails } from "./submission-details";
 import type { Submission, SubmissionStatus } from "@/types/types";
@@ -40,6 +40,7 @@ import { ErrorOccurred } from "../error-view";
 import { toast } from "sonner";
 import { useEditTask, useTasks } from "@/hooks/use-tasks";
 import { DeleteAlert } from "../delete-modal";
+import { SubmissionBulkEditBar } from "../bulk-edit-bar";
 
 const STATUS_OPTIONS: SubmissionStatus[] = ["pending", "approved", "rejected"];
 
@@ -52,9 +53,11 @@ export default function SubmissionTable() {
   const [detailsOpen, setDetailsOpen] = React.useState(false);
   const [deleteOpen, setDeleteOpen] = React.useState(false)
   const [deleteTarget, setDeleteTarget] = React.useState<Submission | null>(null)
+  const [isBulkPending, setIsBulkPending] = React.useState(false);
+  const { mutateAsync: editSubmission } = useEditSubmission();
 
 
-  const { data: relatedTaskData } = useTasks([{ field: 'id', value: selectedSubmission?.taskId }]);
+  const { data: relatedTaskData } = useTasks([{ field: 'id', value: deleteTarget?.taskId }]);
   const { mutate: deleteSubmission } = useDeleteSubmission();
   const { mutate: editTask } = useEditTask();
 
@@ -68,7 +71,7 @@ export default function SubmissionTable() {
   }, [])
 
   const handleDeleteConfirm = React.useCallback(() => {
-    if(!deleteTarget) return;
+    if (!deleteTarget) return;
     const relatedTask = relatedTaskData?.[0];
     deleteSubmission(deleteTarget.id, {
       onSuccess: () => {
@@ -82,7 +85,7 @@ export default function SubmissionTable() {
       },
       onError: () => toast.error("Failed to delete submission"),
     });
-  }, [deleteTarget, deleteSubmission, editTask])
+  }, [deleteTarget, relatedTaskData, deleteSubmission, editTask])
 
 
   const columns = React.useMemo(() => buildColumns(handleView, handleDeleteClick), [handleView, handleDeleteClick]);
@@ -104,9 +107,39 @@ export default function SubmissionTable() {
     initialState: {
 
       pagination: { pageSize: 6 }
-  }
+    }
   });
+  const selectedRows = table.getFilteredSelectedRowModel().rows;
 
+  const handleBulkApply = React.useCallback(
+    async (changes: { status?: SubmissionStatus }) => {
+      if (!selectedRows.length) return
+      setIsBulkPending(true)
+      try {
+        await Promise.all(
+          selectedRows.map((row) =>
+            editSubmission({
+              id: row.original.id,
+              data: {
+                ...changes,
+                // auto-set reviewedAt if moving away from pending
+                reviewedAt: changes.status && changes.status !== 'pending'
+                  ? new Date()
+                  : undefined,
+              },
+            })
+          )
+        )
+        toast.success(`Updated ${selectedRows.length} submission${selectedRows.length > 1 ? "s" : ""}`)
+        table.resetRowSelection()
+      } catch {
+        toast.error("Some updates failed")
+      } finally {
+        setIsBulkPending(false)
+      }
+    },
+    [selectedRows, editSubmission, table]
+  )
   if (isPending) return <SkeletonTable />;
   if (isError) return <ErrorOccurred />;
 
@@ -176,6 +209,14 @@ export default function SubmissionTable() {
         </DropdownMenu>
       </div>
 
+      {selectedRows.length > 0 && (
+        <SubmissionBulkEditBar
+          selectedCount={selectedRows.length}
+          onApply={handleBulkApply}
+          onClear={() => table.resetRowSelection()}
+          isPending={isBulkPending}
+        />
+      )}
       {/* Table */}
       <div className="rounded-md border">
         <Table>
@@ -247,7 +288,7 @@ export default function SubmissionTable() {
         open={detailsOpen}
         onOpenChange={setDetailsOpen}
       />
-       <DeleteAlert
+      <DeleteAlert
         open={deleteOpen}
         onOpenChange={setDeleteOpen}
         onConfirm={handleDeleteConfirm}

@@ -34,11 +34,12 @@ import {
 import { buildColumns } from "./build-columns";
 import { TaskDetails } from "./task-details";
 import type { Task, TaskType } from "@/types/types";
-import { useDeleteTask, useTasks } from "@/hooks/use-tasks";
+import { useDeleteTask, useEditTask, useTasks } from "@/hooks/use-tasks";
 import { SkeletonTable } from "../table-skeleton";
 import { ErrorOccurred } from "../error-view";
 import { toast } from "sonner";
 import { DeleteAlert } from "../delete-modal";
+import { BulkEditBar } from "../bulk-edit-bar";
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 const STATUS_OPTIONS = ["active", "completed", "archived"] as const;
@@ -50,10 +51,12 @@ export default function TaskTable() {
     const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
     const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
     const [rowSelection, setRowSelection] = React.useState({});
-
+    const [isBulkPending, setIsBulkPending] = React.useState(false);
     // ── dialog state (lifted out of columns) ────────────────────────────────────
     const [selectedTask, setSelectedTask] = React.useState<Task | null>(null);
     const [detailsOpen, setDetailsOpen] = React.useState(false);
+    const [deleteTarget, setDeleteTarget] = React.useState<Task | null>(null)
+    const [deleteOpen, setDeleteOpen] = React.useState(false)
     const { data, isPending, isError } = useTasks();
 
     const handleView = React.useCallback((task: Task) => {
@@ -62,9 +65,7 @@ export default function TaskTable() {
     }, []);
 
     const { mutate: deleteTask } = useDeleteTask();
-
-    const [deleteTarget, setDeleteTarget] = React.useState<Task | null>(null)
-    const [deleteOpen, setDeleteOpen] = React.useState(false)
+    const { mutateAsync: editTask } = useEditTask();
 
     const handleDeleteClick = React.useCallback((task: Task) => {
         setDeleteTarget(task)
@@ -118,6 +119,28 @@ export default function TaskTable() {
         }
     });
 
+
+    const selectedRows = table.getFilteredSelectedRowModel().rows;
+    const handleBulkApply = React.useCallback(
+        async (changes: { amount?: number; campaignId?: string }) => {
+            if (!selectedRows.length) return
+            setIsBulkPending(true)
+            try {
+                await Promise.all(
+                    selectedRows.map((row) =>
+                        editTask({ id: row.original.id, data: changes })
+                    )
+                )
+                toast.success(`Updated ${selectedRows.length} task${selectedRows.length > 1 ? "s" : ""}`)
+                table.resetRowSelection()
+            } catch {
+                toast.error("Some updates failed")
+            } finally {
+                setIsBulkPending(false)
+            }
+        },
+        [selectedRows, editTask, table]
+    )
     if (isPending) return <SkeletonTable />;
     if (isError) return <ErrorOccurred />;
     return (
@@ -205,7 +228,15 @@ export default function TaskTable() {
                     </DropdownMenuContent>
                 </DropdownMenu>
             </div>
-
+            {/* ✅ Bulk edit bar — only visible when rows are selected */}
+            {selectedRows.length > 0 && (
+                <BulkEditBar
+                    selectedCount={selectedRows.length}
+                    onApply={handleBulkApply}
+                    onClear={() => table.resetRowSelection()}
+                    isPending={isBulkPending}
+                />
+            )}
             {/* ── Table ──────────────────────────────────────────────────────────── */}
             <div className="rounded-md border">
                 <Table>
