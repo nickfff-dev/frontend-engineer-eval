@@ -395,7 +395,7 @@ export const MOCK_SUBMISSIONS: Submission[] = [
     status: 'approved',
     data: {
       postUrl: 'https://twitter.com/user/status/123456',
-      evidenceScreenshot: 'https://via.placeholder.com/400x300?text=Screenshot',
+      evidenceScreenshot: 'https://images.unsplash.com/photo-1516383274235-5f42d6c6426d?q=80&w=2074&auto=format&fit=crop',
     },
     submittedAt: new Date('2024-03-09'),
     reviewedAt: new Date('2024-03-09'),
@@ -407,7 +407,7 @@ export const MOCK_SUBMISSIONS: Submission[] = [
     status: 'pending',
     data: {
       postUrl: 'https://twitter.com/user/status/654321',
-      evidenceScreenshot: 'https://via.placeholder.com/400x300?text=Screenshot',
+      evidenceScreenshot: 'https://images.unsplash.com/photo-1516383274235-5f42d6c6426d?q=80&w=2074&auto=format&fit=crop',
     },
     submittedAt: new Date('2024-03-10'),
   },
@@ -418,7 +418,7 @@ export const MOCK_SUBMISSIONS: Submission[] = [
     status: 'approved',
     data: {
       postUrl: 'https://instagram.com/p/ABC123',
-      evidenceScreenshot: 'https://via.placeholder.com/400x300?text=Screenshot',
+      evidenceScreenshot: 'https://images.unsplash.com/photo-1516383274235-5f42d6c6426d?q=80&w=2074&auto=format&fit=crop',
     },
     submittedAt: new Date('2024-03-08'),
     reviewedAt: new Date('2024-03-08'),
@@ -430,7 +430,7 @@ export const MOCK_SUBMISSIONS: Submission[] = [
     status: 'rejected',
     data: {
       emailContent: 'Hi, can you share your feedback on our product?',
-      evidenceScreenshot: 'https://via.placeholder.com/400x300?text=Screenshot',
+      evidenceScreenshot: 'https://images.unsplash.com/photo-1516383274235-5f42d6c6426d?q=80&w=2074&auto=format&fit=crop',
     },
     submittedAt: new Date('2024-03-07'),
     reviewedAt: new Date('2024-03-08'),
@@ -442,7 +442,7 @@ export const MOCK_SUBMISSIONS: Submission[] = [
     status: 'pending',
     data: {
       postUrl: 'https://twitter.com/user/status/789012',
-      evidenceScreenshot: 'https://via.placeholder.com/400x300?text=Screenshot',
+      evidenceScreenshot: 'https://images.unsplash.com/photo-1516383274235-5f42d6c6426d?q=80&w=2074&auto=format&fit=crop',
     },
     submittedAt: new Date('2024-03-09'),
   },
