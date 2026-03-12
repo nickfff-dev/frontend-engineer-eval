@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import { Roboto, Roboto_Mono } from "next/font/google";
 import "./globals.css";
+import { AuthProvider } from '@/context/AuthContext'
+import { Toaster } from "@/components/ui/sonner"
 import { cn } from "@/lib/utils";
-const _roboto = Roboto({ weight: ["100", "200", "300", "400", "500", "600", "700","800","900"]},) 
-const _robotoMono = Roboto_Mono({  weight: ["100", "200", "300", "400", "500", "600", "700"]},)
+const _roboto = Roboto({ weight: ["100", "200", "300", "400", "500", "600", "700", "800", "900"] },)
+const _robotoMono = Roboto_Mono({ weight: ["100", "200", "300", "400", "500", "600", "700"] },)
 
 
 export const metadata: Metadata = {
@@ -21,7 +23,10 @@ export default function RootLayout({
       <body
         className={`${_roboto.className} ${_robotoMono.className} antialiased`}
       >
-        {children}
+        <AuthProvider>
+          {children}
+        </AuthProvider>
+        <Toaster />
       </body>
     </html>
   );
