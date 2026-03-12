@@ -8,6 +8,8 @@ import {
   Users,
   Settings,
   TrendingUpIcon,
+  PenLineIcon,
+  DatabaseSearchIcon,
 } from "lucide-react"
 import { NavMain } from "./nav-main"
 import { NavUser } from "./nav-user"
@@ -22,12 +24,12 @@ import { useAuth } from "@/context/AuthContext"
 
 const ADMIN_ROUTES = [
   { title: 'Dashboard', url: '/dashboard', icon: LayoutDashboard },
-  { title: 'Task Composer', url: '/tasks/composer', icon: ListTodo },
+  { title: 'Task Composer', url: '/tasks/composer', icon: PenLineIcon },
   { title: 'Task Management', url: '/tasks/management', icon: ListTodo },
   { title: 'Submissions', url: '/submissions', icon: ClipboardCheck },
   { title: 'User Management', url: '/users', icon: Users },
   { title: 'Performance', url: '/metrics', icon: TrendingUpIcon },
-  { title: 'Feed', url: '/feed', icon: ListTodo },
+  { title: 'Feed', url: '/feed', icon: DatabaseSearchIcon },
   { title: 'Settings', url: '/settings', icon: Settings },
 ]
 
