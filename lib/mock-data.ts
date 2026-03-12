@@ -115,7 +115,7 @@ export const MOCK_TASKS: Task[] = [
     reward: 50,
     allowMultipleSubmissions: true,
     campaignId: 'camp-001',
-    status: 'active', 
+    status: 'active',
     createdAt: new Date('2024-03-01'),
     submissionsReceived: 8,
   },
@@ -492,14 +492,14 @@ export function getSubmissions(filters: Filter<Submission>[] = []): Submission[]
 
 
 
-export function addTask(task:Task){
+export function addTask(task: Task) {
   const tasks = getTasks();
-   localStorage.setItem('tasks', JSON.stringify([...tasks, task]))
+  localStorage.setItem('tasks', JSON.stringify([...tasks, task]))
 }
 
-export function addSubmission(submission:Submission){
+export function addSubmission(submission: Submission) {
   const submissions = getSubmissions();
-   localStorage.setItem('submissions', JSON.stringify([...submissions, submission]))
+  localStorage.setItem('submissions', JSON.stringify([...submissions, submission]))
 }
 
 export function editTask(id: string, task_data: Partial<Task>) {
@@ -516,14 +516,14 @@ export function editSubmission(id: string, submission_data: Partial<Submission>)
   return updated.find((s) => s.id === id)!;
 }
 
-export function deleteTask(id:string){
+export function deleteTask(id: string) {
   const tasks = getTasks();
   const submissions = getSubmissions();
   localStorage.setItem('submissions', JSON.stringify(submissions.filter((s) => s.taskId !== id)));
   localStorage.setItem('tasks', JSON.stringify([...(tasks.filter(task => task.id !== id))]))
 }
 
-export function deleteSubmission(id:string){
+export function deleteSubmission(id: string) {
   const submissions = getSubmissions();
   localStorage.setItem('submissions', JSON.stringify([...(submissions.filter(submission => submission.id !== id))]))
 }
