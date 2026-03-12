@@ -35,7 +35,7 @@ export function NavUser({
   logOut
 }: {
   user: User,
-  logOut: (id:string) => void
+  logOut: (id: string) => void
 }) {
   const { isMobile } = useSidebar()
 
@@ -80,13 +80,15 @@ export function NavUser({
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
               <DropdownMenuItem>
-                <BadgeCheck />
-                Account
+                <a href="/settings">
+                  <BadgeCheck />
+                  Account
+                </a>
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem
-            onClick={()=>{logOut(user.id)}}
+              onClick={() => { logOut(user.id) }}
             >
               <LogOut />
               Log out

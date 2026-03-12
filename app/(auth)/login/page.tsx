@@ -99,15 +99,21 @@ export default function LoginPage() {
 
           {/* Demo info */}
           <div className="rounded-lg bg-blue-50 p-4">
-            <p className="text-xs font-semibold text-blue-900">Demo Credentials</p>
+            <p className="text-xs font-semibold text-blue-900">Demo Admin Credentials</p>
             <p className="text-xs text-blue-800 mt-1">
               <strong>Admin:</strong> admin@example.com
             </p>
             <p className="text-xs text-blue-800">
               <strong>Password:</strong> password
             </p>
-            <p className="text-xs text-blue-700 mt-2">
-              Try any other email (e.g., sarah@example.com) with password "password" to login as a worker.
+          </div>
+          <div className="rounded-lg bg-blue-50 p-4">
+            <p className="text-xs font-semibold text-blue-900">Demo Worker Credentials</p>
+            <p className="text-xs text-blue-800 mt-1">
+              <strong>Worker:</strong> sarah@example.com
+            </p>
+            <p className="text-xs text-blue-800">
+              <strong>Password:</strong> password1
             </p>
           </div>
         </div>
