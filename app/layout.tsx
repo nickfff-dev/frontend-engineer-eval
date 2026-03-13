@@ -4,6 +4,8 @@ import "./globals.css";
 import { AuthProvider } from '@/context/AuthContext'
 import { Toaster } from "@/components/ui/sonner"
 import { cn } from "@/lib/utils";
+import { NuqsAdapter } from 'nuqs/adapters/next/app'
+
 const _roboto = Roboto({ weight: ["100", "200", "300", "400", "500", "600", "700", "800", "900"] },)
 const _robotoMono = Roboto_Mono({ weight: ["100", "200", "300", "400", "500", "600", "700"] },)
 
@@ -24,7 +26,9 @@ export default function RootLayout({
         className={`${_roboto.className} ${_robotoMono.className} antialiased`}
       >
         <AuthProvider>
-          {children}
+          <NuqsAdapter>
+            {children}
+          </NuqsAdapter>
         </AuthProvider>
         <Toaster />
       </body>

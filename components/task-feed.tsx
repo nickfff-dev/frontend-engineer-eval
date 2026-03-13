@@ -38,6 +38,7 @@ import type { TaskType, Submission, User } from '@/types/types'
 import { useTasks, useEditTask } from '@/hooks/use-tasks'
 import { useAddSubmission } from '@/hooks/use-submissions'
 import type { Task } from '@/types/types'
+import { useQueryState, parseAsStringLiteral } from 'nuqs'
 
 
 
@@ -102,10 +103,10 @@ function TaskCard({ task, onSelect }: TaskCardProps) {
                     </span>
                     {/* Slots remaining indicator */}
                     <span className={`text-xs font-medium ${isFull
-                            ? 'text-destructive'
-                            : slotsRemaining <= 3
-                                ? 'text-amber-600'
-                                : 'text-emerald-600'
+                        ? 'text-destructive'
+                        : slotsRemaining <= 3
+                            ? 'text-amber-600'
+                            : 'text-emerald-600'
                         }`}>
                         {isFull ? 'Full' : `${slotsRemaining} left`}
                     </span>
@@ -134,11 +135,17 @@ function TaskCard({ task, onSelect }: TaskCardProps) {
 // ── Main Component ─────────────────────────────────────────────────────────────────
 
 export default function TaskFeed({ user }: { user: User }) {
-    const [selectedTask, setSelectedTask] = useState<Task | null>(null)
-    const [sortBy, setSortBy] = useState<SortOption>('latest')
-    const [filterType, setFilterType] = useState<FilterType>('all')
-    const [submissionData, setSubmissionData] = useState(EMPTY_FORM)
+    const [sortBy, setSortBy] = useQueryState(
+        'sort',
+        parseAsStringLiteral(['latest', 'reward'] as const).withDefault('latest')
+    )
 
+    const [filterType, setFilterType] = useQueryState(
+        'type',
+        parseAsStringLiteral(['all', 'social_media_posting', 'email_sending', 'social_media_liking'] as const).withDefault('all')
+    )
+    const [selectedTask, setSelectedTask] = useState<Task | null>(null)
+    const [submissionData, setSubmissionData] = useState(EMPTY_FORM)
     const evidenceInputId = useId()
     const postUrlId = useId()
     const emailContentId = useId()
