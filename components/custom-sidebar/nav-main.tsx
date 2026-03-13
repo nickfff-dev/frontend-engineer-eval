@@ -26,9 +26,9 @@ export function NavMain({
     <SidebarGroup>
       <SidebarGroupLabel className="mb-6">  <Link href="/dashboard" className="flex items-center gap-2">
         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 text-white font-bold">
-          ML
+          MT
         </div>
-        <span className="hidden font-semibold text-xl text-white sm:inline">Microlearning</span>
+        <span className="hidden font-semibold text-xl text-white sm:inline">MicroTasks</span>
       </Link></SidebarGroupLabel>
       <SidebarMenu className="space-y-4">
         {items.map((item) => {

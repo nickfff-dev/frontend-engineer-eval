@@ -210,7 +210,7 @@ export default function TaskFeed({ user }: { user: User }) {
         const newSubmission: Submission = {
             id: crypto.randomUUID(),
             taskId: selectedTask.id,
-            workerId: user.id, // replace with auth context
+            workerId: user.id,
             status: 'pending',
             data: {
                 postUrl: submissionData.postUrl || undefined,
