@@ -4,6 +4,7 @@ import { getSubmissions, getTaskTypeLabel } from '@/lib/mock-data'
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { getTaskSlots } from '@/lib/mock-data'
 import {
     Select,
     SelectContent,
@@ -75,6 +76,7 @@ interface TaskCardProps {
 }
 
 function TaskCard({ task, onSelect }: TaskCardProps) {
+    const { maxSlots, slotsRemaining, isFull } = getTaskSlots(task)
     return (
         <Card
             className="flex flex-col hover:border-blue-300 hover:shadow-lg transition-all duration-200 cursor-pointer group"
@@ -96,30 +98,33 @@ function TaskCard({ task, onSelect }: TaskCardProps) {
                 <div className="flex items-center justify-between text-sm text-slate-500 border-t border-slate-100 pt-3">
                     <span className="flex items-center gap-1">
                         <Users className="h-3.5 w-3.5" />
-                        {task.submissionsReceived} submissions
+                        {task.submissionsReceived} / {maxSlots} slots
                     </span>
-                    <span className="flex items-center gap-1 text-xs">
-                        <Clock className="h-3.5 w-3.5" />
-                        {task.allowMultipleSubmissions ? 'Multiple allowed' : 'One per person'}
+                    {/* Slots remaining indicator */}
+                    <span className={`text-xs font-medium ${isFull
+                            ? 'text-destructive'
+                            : slotsRemaining <= 3
+                                ? 'text-amber-600'
+                                : 'text-emerald-600'
+                        }`}>
+                        {isFull ? 'Full' : `${slotsRemaining} left`}
                     </span>
                 </div>
             </CardContent>
 
             <CardFooter className="flex items-center justify-between pt-0">
-                <div className="flex items-center gap-1 text-xl font-bold text-slate-900">
+                <div className="flex items-center gap-1 text-xl font-bold">
                     <DollarSign className="h-5 w-5 text-green-600" />
                     <span className="text-green-700">{task.reward}</span>
                 </div>
                 <Button
                     size="sm"
                     className="bg-blue-600 hover:bg-blue-700"
-                    onClick={(e) => {
-                        e.stopPropagation()
-                        onSelect(task)
-                    }}
+                    disabled={isFull}
+                    onClick={(e) => { e.stopPropagation(); if (!isFull) onSelect(task) }}
                 >
-                    Submit
-                    <ArrowRight className="ml-1 h-4 w-4" />
+                    {isFull ? 'Done' : 'Submit'}
+                    {!isFull && <ArrowRight className="ml-1 h-4 w-4" />}
                 </Button>
             </CardFooter>
         </Card>
@@ -166,6 +171,12 @@ export default function TaskFeed({ user }: { user: User }) {
     const handleSubmit = () => {
         if (!user) return
         if (!selectedTask) return
+        // ✅ Check slots before anything else
+        const { isFull, slotsRemaining } = getTaskSlots(selectedTask)
+        if (isFull) {
+            toast.error('This task has no remaining slots')
+            return
+        }
         if (!selectedTask.allowMultipleSubmissions) {
             const existingSubmission = getSubmissions([
                 { field: 'taskId', value: selectedTask.id },

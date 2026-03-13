@@ -558,3 +558,17 @@ export function deleteUser(id: string): void {
   localStorage.setItem('submissions', JSON.stringify(submissions.filter((u) => u.workerId !== id)))
   localStorage.setItem('users', JSON.stringify(data.filter((u) => u.id !== id)))
 }
+
+export function getTaskSlots(task: Task): {
+  maxSlots: number
+  slotsRemaining: number
+  isFull: boolean
+} {
+  const maxSlots = task.reward > 0 ? Math.floor(task.amount / task.reward) : 0
+  const slotsRemaining = Math.max(0, maxSlots - task.submissionsReceived)
+  return {
+    maxSlots,
+    slotsRemaining,
+    isFull: slotsRemaining === 0,
+  }
+}
