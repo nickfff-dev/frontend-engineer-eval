@@ -51,9 +51,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = useCallback(() => {
     localStorage.removeItem('session');
-    // refresh data on logout
-    localStorage.removeItem('tasks');
-    localStorage.removeItem('submissions')
     setUser(null);
   }, [])
 
