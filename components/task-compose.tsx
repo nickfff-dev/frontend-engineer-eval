@@ -21,7 +21,7 @@ import { Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useAddTask } from '@/hooks/use-tasks'
 import type { Task } from '@/types/types'
-
+import { MarkdownEditor } from '@/components/markdown-editor'
 const taskSchema = z.object({
   type: z.enum(['social_media_posting', 'email_sending', 'social_media_liking']),
   title: z.string().min(3, 'Title must be at least 3 characters'),
@@ -142,11 +142,16 @@ export default function TaskComposer() {
             <Label htmlFor="details" className="text-slate-900 font-medium">
               Task Details *
             </Label>
-            <Textarea
-              id="details"
-              placeholder="Detailed instructions for the task"
-              {...register('details')}
-              className="min-h-32 border-slate-300 resize-none"
+            <Controller
+              name="details"
+              control={control}
+              render={({ field }) => (
+                <MarkdownEditor
+                  value={field.value}
+                  onChange={field.onChange}
+                  placeholder="Detailed instructions for the task"
+                />
+              )}
             />
             {errors.details && <p className="text-xs text-red-600">{errors.details.message}</p>}
           </div>

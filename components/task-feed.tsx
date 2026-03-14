@@ -5,6 +5,7 @@ import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { getTaskSlots } from '@/lib/mock-data'
+
 import {
     Select,
     SelectContent,
@@ -350,7 +351,9 @@ export default function TaskFeed({ user }: { user: User }) {
                             {/* Details */}
                             <div>
                                 <p className="text-sm font-medium text-slate-900 mb-1">Task Details</p>
-                                <p className="text-sm text-slate-600 whitespace-pre-wrap">{selectedTask.details}</p>
+                                <div className="prose prose-sm max-w-none text-sm text-slate-600">
+                                    {selectedTask.details}
+                                </div>
                             </div>
 
                             {/* Submission form */}
