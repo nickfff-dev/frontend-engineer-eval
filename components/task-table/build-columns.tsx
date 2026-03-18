@@ -6,6 +6,9 @@ import { Badge } from "../ui/badge";
 import { ArrowUpDown, MoreHorizontal, Eye, Edit2, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "../ui/dropdown-menu";
+import { PhaseProgress } from '@/components/phase-progress'
+import { DripStatus } from '@/components/drip-status'
+import { getDripState } from "@/lib/phases";
 
 const statusBadgeVariant: Record<
   Task["status"],
@@ -136,7 +139,30 @@ export function buildColumns(
       cell: ({ row }) => (
         <div className="text-center">{row.getValue("submissionsReceived")}</div>
       ),
+    }, {
+      id: "phases",
+      header: "Phases",
+      cell: ({ row }) => {
+        const task = row.original
+        if (!task.phases?.length) return <span className="text-xs text-muted-foreground">—</span>
+        return <PhaseProgress phases={task.phases} compact />
+      },
     },
+    {
+      id: "drip",
+      header: "Drip",
+      cell: ({ row }) => {
+        const task = row.original
+        if (!task.dripFeed?.enabled) return <span className="text-xs text-muted-foreground">—</span>
+        const { state, nextReleaseLabel } = getDripState(task)
+        return (
+          <Badge variant={state === 'active' ? 'default' : state === 'waiting' ? 'secondary' : 'outline'} className="text-xs capitalize">
+            {state === 'waiting' ? `~${nextReleaseLabel}` : state}
+          </Badge>
+        )
+      },
+    },
+
     {
       id: "actions",
       enableHiding: false,

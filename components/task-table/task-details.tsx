@@ -15,10 +15,14 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Pencil } from "lucide-react";
 import { toast } from "sonner";
-import type { Task } from "@/types/types";
+import type { DripFeed, Task, TaskPhase } from "@/types/types";
 import { useEditTask } from "@/hooks/use-tasks";
 import { getSubmissionStatusBadgeColor } from "@/lib/mock-data";
 import { MarkdownEditor } from "../markdown-editor";
+import { PhaseBuilder } from '@/components/task-composer/phase-builder'
+import { DripFeedConfig } from '@/components/task-composer/drip-feed-config'
+import { PhaseProgress } from '@/components/phase-progress'
+import { DripStatus } from '@/components/drip-status'
 
 
 interface TaskDetailsProps {
@@ -86,6 +90,8 @@ export function TaskDetails({ task, open, onOpenChange }: TaskDetailsProps) {
     details: "",
     amount: 0,
     reward: 0,
+    phases: [] as TaskPhase[],
+    dripFeed: { enabled: false, dripAmount: 10, dripInterval: 60, totalReleased: 0 } as DripFeed,
   });
 
   useEffect(() => {
@@ -95,6 +101,8 @@ export function TaskDetails({ task, open, onOpenChange }: TaskDetailsProps) {
         details: task.details,
         amount: task.amount,
         reward: task.reward,
+        phases: task.phases ?? [],
+        dripFeed: task.dripFeed ?? { enabled: false, dripAmount: 10, dripInterval: 60, totalReleased: 0 },
       });
     }
   }, [task]);
@@ -224,6 +232,33 @@ export function TaskDetails({ task, open, onOpenChange }: TaskDetailsProps) {
                     onChange={(e) => setForm((prev) => ({ ...prev, reward: Number(e.target.value) }))}
                   />
                 </div>
+              </div>
+              {/* Phase progress read-only view */}
+              {task.phases?.length ? (
+                <div className="space-y-1.5">
+                  <p className="text-xs text-muted-foreground">Phase Progress</p>
+                  <PhaseProgress phases={task.phases} />
+                </div>
+              ) : null}
+
+              {/* Drip status */}
+              {task.dripFeed?.enabled && <DripStatus task={task} />}
+
+              {/* Phase editor */}
+              <div className="space-y-1.5 border-t pt-4">
+                <Label>Phases</Label>
+                <PhaseBuilder
+                  phases={form.phases}
+                  onChange={(phases) => setForm((p) => ({ ...p, phases }))}
+                />
+              </div>
+
+              {/* Drip feed editor */}
+              <div className="border-t pt-4">
+                <DripFeedConfig
+                  value={form.dripFeed}
+                  onChange={(drip) => setForm((p) => ({ ...p, dripFeed: drip }))}
+                />
               </div>
             </div>
           </div>

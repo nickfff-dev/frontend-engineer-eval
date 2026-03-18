@@ -13,7 +13,7 @@ export interface User {
 
 export interface Sessions {
   id: string,
-  user_id:string,
+  user_id: string,
   createdAt: Date
 }
 
@@ -32,23 +32,27 @@ export interface Task {
   status: 'active' | 'completed' | 'archived'
   createdAt: Date
   submissionsReceived: number
+  // Phase 2 additions
+  phases?: TaskPhase[]
+  dripFeed?: DripFeed
 }
 
-  export type SubmissionStatus = 'pending' | 'approved' | 'rejected'
+export type SubmissionStatus = 'pending' | 'approved' | 'rejected'
 
-  export interface Submission {
-    id: string
-    taskId: string
-    workerId: string
-    status: SubmissionStatus
-    data: {
-      postUrl?: string
-      emailContent?: string
-      evidenceScreenshot: string
-    }
-    submittedAt: Date
-    reviewedAt?: Date
+export interface Submission {
+  id: string
+  taskId: string
+  workerId: string
+  status: SubmissionStatus
+  phaseId?: string        // which phase this submission belongs to
+  data: {
+    postUrl?: string
+    emailContent?: string
+    evidenceScreenshot: string
   }
+  submittedAt: Date
+  reviewedAt?: Date
+}
 
 export interface AuthContextType {
   user: User | null
@@ -56,4 +60,24 @@ export interface AuthContextType {
   login: (email: string, password: string) => Promise<void>
   logout: () => void
   isLoading: boolean
+}
+
+export interface TaskPhase {
+  id: string
+  phaseIndex: number
+  phaseName: string
+  slots: number
+  instructions: string
+  reward: number
+  submissionsReceived: number
+  status: 'pending' | 'active' | 'completed'
+}
+
+// ── Drip Feed ─────────────────────────────────────────────────────────────────
+export interface DripFeed {
+  enabled: boolean
+  dripAmount: number
+  dripInterval: number   // minutes
+  lastReleasedAt?: Date
+  totalReleased: number
 }
