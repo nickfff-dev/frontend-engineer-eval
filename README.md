@@ -1,351 +1,288 @@
-# TaskFlow — Crowdsourced Task Management Platform
+# TaskFlow — Phase 2 Documentation
 
-A full-featured task management and crowdsourcing platform built with Next.js, where admins create and manage tasks, workers browse and submit completions, and both roles can track performance — all powered by TanStack Query and a localStorage mock backend.
+Phase 2 introduces three major feature additions: **Task Phases**, **Drip Feed**, and **Bulk Upload**. These are additive — all existing standard task behavior is preserved.
 
 ---
 
 ## Table of Contents
 
-- [Overview](#overview)
-- [Tech Stack](#tech-stack)
-- [Project Structure](#project-structure)
-- [Features](#features)
-- [Data Layer](#data-layer)
-- [Authentication](#authentication)
-- [Role-Based Access](#role-based-access)
-- [Hooks Reference](#hooks-reference)
-- [Component Architecture](#component-architecture)
-- [Getting Started](#getting-started)
-- [Known Limitations](#known-limitations)
+- [Task Phases](#task-phases)
+- [Drip Feed](#drip-feed)
+- [Bulk Upload](#bulk-upload)
+- [New Types](#new-types)
+- [New Utilities](#new-utilities)
+- [New Components](#new-components)
+- [Updated Components](#updated-components)
+- [Mock Data](#mock-data)
 
 ---
 
-## Overview
+## Task Phases
 
-TaskFlow lets administrators compose tasks (social media posting, email sending, social media liking), manage submissions from workers, and oversee users. Workers browse the task feed, submit evidence for completed tasks, and track their earnings and approval rates on a performance dashboard.
+Phases allow a single task to be broken into multiple sequential stages. Each phase must collect enough submissions to fill its slots before the next phase unlocks.
 
-The entire backend is simulated using `localStorage` — making the app fully self-contained with no server required. All async operations use realistic delays to simulate network latency.
+### How phases work
 
----
+- A task can have zero phases (standard behavior) or one or more phases
+- Phases run in order by `phaseIndex` — only one phase is `active` at a time
+- A phase transitions from `active` → `completed` when `submissionsReceived >= slots`
+- When a phase completes, the next phase automatically becomes `active` via `advancePhases()`
+- The task-level `submissionsReceived` is always the sum of all phase submissions
 
-## Tech Stack
+### Phase statuses
 
-| Layer | Technology |
+| Status | Meaning |
 |---|---|
-| Framework | Next.js 14 (App Router) |
-| Language | TypeScript |
-| Styling | Tailwind CSS v4 |
-| UI Components | shadcn/ui |
-| Data Fetching | TanStack Query v5 |
-| Tables | TanStack Table v8 |
-| Mock Backend | localStorage |
-| Notifications | Sonner |
-| Icons | Lucide React |
+| `active` | Currently open for submissions |
+| `completed` | Slots filled — phase is locked |
+| `pending` | Not yet unlocked — waiting for a prior phase to complete |
+
+### Phase parameters
+
+| Field | Type | Description |
+|---|---|---|
+| `id` | `string` | Unique phase identifier |
+| `phaseIndex` | `number` | 1-based display index |
+| `phaseName` | `string` | Display name e.g. `"Phase 1 — Launch"` |
+| `slots` | `number` | Number of completions required |
+| `instructions` | `string` | Phase-specific instructions shown to workers |
+| `reward` | `number` | Reward per submission for this phase (can differ per phase) |
+| `submissionsReceived` | `number` | Current completion count |
+| `status` | `'pending' \| 'active' \| 'completed'` | Current phase state |
+
+### Worker experience
+
+- Workers only see the **active phase** instructions and reward
+- Workers can see **past phases they submitted to** in a collapsible section inside the submit dialog
+- If all phases are complete, the task submit button is disabled
+
+### Admin experience
+
+- Task table shows a compact phase progress bar in a dedicated column
+- Task detail page has a dedicated **Phases tab** showing all phases, per-phase progress bars, instructions, and per-phase submission lists
+- The **Edit tab** on the task detail page includes a full `PhaseBuilder` for adding, editing, and removing phases
+- Task composer includes the `PhaseBuilder` when creating new tasks
+
+### Submission tracking
+
+Every submission now carries an optional `phaseId` field linking it to the phase it was submitted under. This allows per-phase submission filtering and display.
 
 ---
 
-## Project Structure
+## Drip Feed
 
-```
-├── app/
-│   ├── dashboard/          # Main dashboard page
-│   ├── feed/               # Worker task feed page
-│   ├── tasks/
-│   │   ├── composer/       # Admin task creation
-│   │   └── management/     # Admin task table
-│   ├── submissions/        # Admin submissions table
-│   ├── users/              # Admin user management table
-│   ├── performance/        # Worker performance dashboard
-│   └── settings/           # User settings page
-│
-├── components/
-│   ├── task-table/
-│   │   ├── components/
-│   │   │   ├── build-columns.tsx
-│   │   │   └── task-details.tsx
-│   │   └── index.tsx
-│   ├── submission-table/
-│   │   ├── components/
-│   │   │   ├── build-columns.tsx
-│   │   │   └── submission-details.tsx
-│   │   └── index.tsx
-│   ├── user-table/
-│   │   ├── components/
-│   │   │   ├── build-columns.tsx
-│   │   │   └── user-details.tsx
-│   │   └── index.tsx
-│   ├── task-feed.tsx        # Worker task browsing + submission
-│   ├── performance.tsx      # Worker stats dashboard
-│   ├── settings.tsx         # Account settings
-│   ├── metrics-grid.tsx     # Dashboard stat cards
-│   ├── recent-tasks.tsx     # Dashboard recent tasks list
-│   └── unauthenticated.tsx  # Auth guard fallback UI
-│
-├── context/
-│   └── AuthContext.tsx      # Auth provider + useAuth hook
-│
-├── hooks/
-│   ├── use-tasks.ts
-│   ├── use-submissions.ts
-│   └── use-users.ts
-│
-└── lib/
-    ├── mock-data.ts         # localStorage CRUD + seed data
-    └── types.ts             # All TypeScript interfaces
-```
+Drip feed is a slot release mechanism that exposes slots in controlled batches rather than all at once. It is configured at the task level and applies to the current active phase.
 
----
+### Drip feed states
 
-## Features
-
-### Admin
-
-| Feature | Description |
+| State | Meaning |
 |---|---|
-| **Task Composer** | Create tasks with type, title, description, details, amount, reward, and multi-submission toggle |
-| **Task Management** | Full TanStack Table with sort, filter by status/type, search by title, inline edit (status, details, amount, reward), delete |
-| **Submission Review** | View all submissions, update status (pending → approved/rejected), auto-sets `reviewedAt` on review, delete |
-| **User Management** | View all users, update role and status, change profile picture |
-| **Dashboard** | Metrics grid (active tasks, total/approved/pending submissions) + recent tasks list |
+| `active` | A batch has been released and slots are available |
+| `waiting` | Current batch is exhausted — next release is scheduled |
+| `completed` | All slots across all batches have been released |
 
-### Worker
+### Drip feed parameters
 
-| Feature | Description |
+| Field | Type | Description | Default |
+|---|---|---|---|
+| `enabled` | `boolean` | Whether drip feed is active | `false` |
+| `dripAmount` | `number` | How many slots to release per interval | — |
+| `dripInterval` | `number` | Interval in **minutes** between releases | — |
+| `totalReleased` | `number` | Cumulative slots released so far | `0` |
+| `lastReleasedAt` | `Date` | Timestamp of the most recent release | — |
+
+### Available interval presets
+
+| Label | Minutes |
 |---|---|
-| **Task Feed** | Browse active tasks, filter by type, sort by newest/reward, tasks already submitted are greyed out |
-| **Task Submission** | Submit post URL, email content, or evidence screenshot (stored as base64) per task type |
-| **Performance** | Stats: total submitted, approved count, approval rate, total earned, top category; full submission history |
-| **Settings** | Update profile picture, change password, view session info |
+| Every 30 minutes | 30 |
+| Every 1 hour | 60 |
+| Every 6 hours | 360 |
+| Every 12 hours | 720 |
+| Every 24 hours | 1440 |
 
-### Shared
+### How drip state is computed
 
-- Session-based authentication persisted in `localStorage`
-- Role-based sidebar navigation (admin sees all routes, worker sees limited routes)
-- Skeleton loading states on all data-fetched views
-- Toast notifications for all mutations
-
----
-
-## Data Layer
-
-All data is persisted in `localStorage` under three keys: `tasks`, `submissions`, `users`. On first load, each collection is seeded from its `MOCK_*` constant if no data exists yet.
-
-### Filter API
-
-All read functions accept an optional array of filters. Each filter targets one field:
+Drip state is computed **client-side** from `lastReleasedAt` + `dripInterval` — no server cron is required for the mock implementation:
 
 ```typescript
-type Filter<T> = { field: keyof T; value: any }
+const elapsed = Date.now() - new Date(drip.lastReleasedAt).getTime()
+const intervalMs = drip.dripInterval * 60 * 1000
 
-// Examples
-getTasks()                                          // all tasks
-getTasks([{ field: 'status', value: 'active' }])   // active tasks only
-getSubmissions([
-  { field: 'workerId', value: 'abc' },
-  { field: 'status',   value: 'pending' },
-])                                                  // pending subs for one worker
+if (elapsed >= intervalMs) → state: 'active'   // ready to release
+if (elapsed <  intervalMs) → state: 'waiting'  // show countdown
+if (totalReleased >= totalSlots) → state: 'completed'
 ```
 
-### CRUD Functions (`lib/mock-data.ts`)
+The `DripStatus` component re-renders every 60 seconds via `setInterval` to keep the countdown live.
 
-```typescript
-// Tasks
-getTasks(filters?)     editTask(id, partial)
-addTask(task)          deleteTask(id)          // also deletes all child submissions
+### Worker experience
 
-// Submissions
-getSubmissions(filters?)  editSubmission(id, partial)
-addSubmission(sub)        deleteSubmission(id)
+- Task cards show a `DripPill` badge indicating the current drip state
+- Drip-blocked tasks (state: `waiting` or `completed`) have their submit button disabled with a "Waiting" label
+- The submit dialog shows a `DripBanner` with a progress bar, slots available now, and next release countdown
 
-// Users
-getUsers(filters?)     editUser(id, partial)
-addUser(user)          deleteUser(id)
-```
+### Admin experience
 
-> `deleteTask` cascades — it removes the task **and** all submissions with a matching `taskId` from localStorage in one operation.
+- Task table shows a drip state badge in a dedicated column
+- Task detail page overview tab shows a full `DripStatus` widget with release progress
+- The **Edit tab** includes a `DripFeedConfig` toggle to enable/disable and configure drip parameters
+- Task composer includes drip feed configuration when creating new tasks
 
 ---
 
-## Authentication
+## Bulk Upload
 
-Authentication is entirely client-side using `localStorage` sessions. The `AuthContext` provides:
+Admins can create multiple tasks at once by uploading a CSV file.
+
+### How to use
+
+1. Navigate to the Task Composer and select the **Bulk Upload** tab
+2. Drag and drop a CSV file onto the upload zone, or click to browse
+3. The file is parsed and previewed — each row becomes one task
+4. Click **Create N Tasks** to submit all tasks sequentially
+
+### CSV format
+
+Download the template from the upload UI. Required and optional columns:
+
+| Column | Required | Description |
+|---|---|---|
+| `title` | ✅ | Task title |
+| `type` | ✅ | One of: `social_media_posting`, `email_sending`, `social_media_liking` |
+| `description` | — | Short description |
+| `details` | — | Full instructions (plain text; markdown supported) |
+| `amount` | — | Total task budget in dollars |
+| `reward` | — | Reward per submission in dollars |
+| `allowMultipleSubmissions` | — | `true` or `false` |
+| `campaignId` | — | Optional campaign reference |
+
+### Validation
+
+- Rows missing `title` or `type` are rejected with a row-level error message
+- Valid rows are previewed before submission — each shows title, type, and reward
+- Tasks are created sequentially (not in parallel) to avoid localStorage race conditions
+- A toast reports how many succeeded out of the total attempted
+
+---
+
+## New Types
+
+Added to `lib/types.ts`:
 
 ```typescript
-interface AuthContextType {
-  user: User | null        // currently logged-in user
-  users: User[]            // all users (used by admin features)
-  login: (email, password) => Promise<void>
-  logout: () => void
-  isLoading: boolean       // true while users query loads or login is in flight
+export interface TaskPhase {
+  id: string
+  phaseIndex: number
+  phaseName: string
+  slots: number
+  instructions: string
+  reward: number
+  submissionsReceived: number
+  status: 'pending' | 'active' | 'completed'
 }
-```
 
-### Session lifecycle
-
-1. On `AuthProvider` mount, `useUsers` fetches all users
-2. Once users load, the `useEffect` reads `localStorage.session`, finds the matching user by `user_id`, and calls `setUser`
-3. `login()` searches the users array for a matching email+password, writes a new session object, and sets the user in state
-4. `logout()` removes the session and clears user state
-5. If a stored session points to a user that no longer exists, the session is automatically cleared
-
-### Session object shape
-
-```typescript
-interface Session {
-  id: string        // crypto.randomUUID()
-  user_id: string
-  role: UserRole
-  createdAt?: Date
+export interface DripFeed {
+  enabled: boolean
+  dripAmount: number
+  dripInterval: number    // minutes
+  lastReleasedAt?: Date
+  totalReleased: number
 }
+
+// Task interface extended with:
+phases?: TaskPhase[]
+dripFeed?: DripFeed
+
+// Submission interface extended with:
+phaseId?: string
 ```
 
 ---
 
-## Role-Based Access
+## New Utilities
 
-Every page follows this pattern — auth logic stays in the page, UI logic stays in the component:
+### `lib/phases.ts`
 
-```tsx
-// app/feed/page.tsx
-export default function FeedPage() {
-  const { user } = useAuth()
-  if (!user) return <Unauthenticated />
-  return <TaskFeed user={user} />
-}
-```
-
-The sidebar (`AppSidebar`) automatically renders the correct route set based on `user.role`:
-
-- **`admin`** — Dashboard, Task Composer, Task Management, Submissions, User Management, Performance, Feed, Settings
-- **`worker`** — Dashboard, Tasks (Feed), Performance, Settings
-
----
-
-## Hooks Reference
-
-All hooks follow the same pattern and are built on TanStack Query.
-
-### `use-tasks.ts`
-
-```typescript
-useTasks(filters?)       // useQuery — fetches tasks, optionally filtered
-useAddTask()             // useMutation — adds a task, invalidates ['tasks']
-useEditTask()            // useMutation({ id, data }) — patches a task
-useDeleteTask()          // useMutation(id) — deletes task + its submissions
-```
-
-### `use-submissions.ts`
-
-```typescript
-useSubmissions(filters?) // useQuery — fetches submissions, optionally filtered
-useAddSubmission()       // useMutation(submission)
-useEditSubmission()      // useMutation({ id, data }) — used for status review
-useDeleteSubmission()    // useMutation(id)
-```
-
-### `use-users.ts`
-
-```typescript
-useUsers(filters?)       // useQuery
-useAddUser()             // useMutation(user)
-useEditUser()            // useMutation({ id, data }) — role, status, profilePicture
-useDeleteUser()          // useMutation(id)
-```
-
-All mutations call `queryClient.invalidateQueries` on success, keeping the UI automatically in sync.
-
----
-
-## Component Architecture
-
-### Tables
-
-Each entity has a dedicated folder under `components/`:
-
-```
-entity-table/
-├── components/
-│   ├── build-columns.tsx     # ColumnDef factory — receives onView and onDelete callbacks
-│   └── entity-details.tsx    # Controlled Dialog — opened from index, not from inside the dropdown
-└── index.tsx                 # Owns all state: sorting, filters, dialog open/selected row
-```
-
-**Why the dialog lives in `index.tsx`:** Putting a `Dialog` inside a `DropdownMenuItem` causes it to unmount immediately when the dropdown closes. The fix is to lift dialog state to the parent, pass an `onView` callback into `buildColumns`, and render the dialog at the top level.
-
-### Filtering & Sorting
-
-All filtering and sorting is handled entirely by TanStack Table — no manual `useEffect` or derived state arrays:
-
-```typescript
-// Set a filter
-table.getColumn("status")?.setFilterValue("active")
-
-// Clear a filter
-table.getColumn("status")?.setFilterValue(undefined)
-
-// Read current filter value for UI display
-table.getColumn("status")?.getFilterValue() as string
-```
-
-### Task Feed submission guard
-
-Before opening the submit dialog the feed checks two things:
-
-1. `task.status === 'active'` (already filtered out of the list)
-2. If `!task.allowMultipleSubmissions`, calls `getSubmissions([...])` synchronously from localStorage to check for an existing submission by the current user
-
-On successful submission:
-- `useAddSubmission` persists the new submission
-- `useEditTask` increments `task.submissionsReceived`
-- A `refreshKey` state variable is incremented to force `submittedTaskIds` (a `useMemo`) to recompute, immediately greying out the card
-
----
-
-## Getting Started
-
-### Prerequisites
-
-- Node.js 18+
-- npm or pnpm
-
-### Installation
-
-```bash
-git clone <repo-url>
-cd taskflow
-npm install
-```
-
-### Run development server
-
-```bash
-npm run dev
-```
-
-Open [http://localhost:3000](http://localhost:3000).
-
-### Seed data
-
-On first load, `localStorage` is automatically populated with mock tasks, submissions, and users from `lib/mock-data.ts`. To reset to seed data, open DevTools and run:
-
-```javascript
-localStorage.clear()
-location.reload()
-```
-
-### Default credentials
-
-Check `MOCK_USERS` in `lib/mock-data.ts` for seeded email/password pairs. At least one user should have `role: 'admin'` and one `role: 'worker'`.
-
----
-
-## Known Limitations
-
-| Limitation | Notes |
+| Function | Description |
 |---|---|
-| **No real backend** | All data lives in `localStorage` — data is per-browser and lost if storage is cleared |
-| **Passwords stored in plaintext** | This is a mock — in production, never store raw passwords client-side |
-| **No real auth** | Sessions are not validated server-side; any user can access any route by navigating directly |
-| **Profile pictures are base64** | Stored inline in localStorage — large images will bloat storage quickly |
-| **No pagination on localStorage reads** | All records are loaded into memory; not suitable for large datasets |
-| **Single-tab only** | Changes in one tab won't reflect in another without a page refresh |
+| `getActivePhase(task)` | Returns the first phase with `status === 'active'`, or `null` |
+| `getPhaseProgress(phase)` | Returns `{ percent, filled, remaining, isFull }` |
+| `advancePhases(phases)` | Marks the current active phase as completed and opens the next one |
+| `getDripState(task)` | Returns `{ state, slotsAvailable, nextReleaseMs, nextReleaseLabel }` |
+| `releaseDrip(task)` | Returns an updated task object with a new drip batch released |
+| `formatDuration(ms)` | Formats milliseconds into a human-readable string e.g. `"5h 30m"` |
+
+---
+
+## New Components
+
+| Component | Location | Description |
+|---|---|---|
+| `PhaseBuilder` | `components/task-composer/phase-builder.tsx` | Add/edit/remove phases in a form — used in both composer and task details edit |
+| `DripFeedConfig` | `components/task-composer/drip-feed-config.tsx` | Toggle and configure drip feed — used in both composer and task details edit |
+| `BulkUpload` | `components/task-composer/bulk-upload.tsx` | CSV drag-drop upload with preview and template download |
+| `PhaseProgress` | `components/phase-progress.tsx` | Full phase timeline with progress bars — `compact` prop for table cells |
+| `DripStatus` | `components/drip-status.tsx` | Drip progress widget with live countdown — auto-refreshes every 60s |
+| `ActivePhaseBanner` | `components/phases/pill-assets.tsx` | Phase context banner shown in the worker submit dialog |
+| `DripBanner` | `components/phases/pill-assets.tsx` | Drip state banner shown in the worker submit dialog |
+| `PhasePill` | Inside `task-feed.tsx` | Compact phase progress shown on task cards |
+| `DripPill` | Inside `task-feed.tsx` | Compact drip state badge shown on task cards |
+
+---
+
+## Updated Components
+
+### `task-feed.tsx`
+- Task cards show phase progress pill and drip state badge when applicable
+- Submit dialog shows `ActivePhaseBanner` (phase progress + past phases collapsible) and `DripBanner`
+- `handleSubmit` validates drip state → phase state → slots → duplicates in that order
+- On success, `advancePhases()` is called if the submission fills the active phase
+- All submissions carry a `phaseId` if submitted under a phase
+- Filter bar gains two new selects: **Phases** (all / phased only / standard only) and **Drip Feed** (all / drip only / no drip)
+- Active filters shown as removable badges with a "Clear all" shortcut
+
+### `task-composer.tsx`
+- Wrapped in a `Tabs` component — **Single Task** and **Bulk Upload** tabs
+- Single task form includes `PhaseBuilder` and `DripFeedConfig` sections below the core fields
+- `phases` and `dripFeed` are local state outside react-hook-form, merged into the task object on submit
+- Reset clears phases and drip feed alongside the form
+
+### `task-detail/index.tsx` (new page)
+- Accessible at `/tasks/[id]`
+- **Overview tab** — rendered markdown details, metadata grid, phase progress summary, drip status widget
+- **Submissions tab** — status summary cards + full submission list with evidence thumbnails
+- **Phases tab** — per-phase cards with progress bars, instructions, and per-phase submission lists (only shown for phased tasks)
+- **Edit tab** — inline editable fields for status, amount, reward, markdown details, `PhaseBuilder`, and `DripFeedConfig`
+
+### `task-table/index.tsx`
+- Table rows are now clickable — navigates to `/tasks/[id]`
+- View Details dropdown item also navigates to the task page
+- `TaskDetails` dialog removed — all detail viewing happens on the dedicated page
+
+### `task-table/build-columns.tsx`
+- Added `phases` column showing `PhaseProgress` in compact mode
+- Added `drip` column showing drip state badge
+- `onView` callback replaced with `router.push('/tasks/[id]')`
+
+### `performance.tsx` (worker)
+- Phase activity card showing phase submission count and campaigns joined
+- Submission history rows show phase badge when relevant
+- Clicking any submission row opens a detail dialog with full evidence, phase context, and reward info
+- "Open for submission" section showing tasks the worker can still submit to with phase/drip context
+
+---
+
+## Mock Data
+
+`MOCK_TASKS` updated with:
+
+| Task | Feature |
+|---|---|
+| `task-6` | Drip feed — 10 slots every 24h, currently in `waiting` state |
+| `task-7` | 3-phase campaign — phase 1 completed (20 slots), phase 2 active (14/50), phase 3 pending |
+| `task-8` | 2-phase + drip feed — phase 1 active with 6-hour drip |
+
+All tasks satisfy `amount = reward × slots`. Task-level `submissionsReceived` equals the sum of all phase `submissionsReceived` for phased tasks.
+
+`MOCK_SUBMISSIONS` updated with phase-linked submissions (`sub-6`, `sub-7`) for `task-7` demonstrating worker phase history, and `sub-8` for the drip task.
