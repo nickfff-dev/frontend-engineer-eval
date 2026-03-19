@@ -32,7 +32,6 @@ import {
     TableRow,
 } from "@/components/ui/table";
 import { buildColumns } from "./build-columns";
-import { TaskDetails } from "./task-details";
 import type { Task, TaskType } from "@/types/types";
 import { useDeleteTask, useEditTask, useTasks } from "@/hooks/use-tasks";
 import { SkeletonTable } from "../table-skeleton";
@@ -52,17 +51,11 @@ export default function TaskTable() {
     const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
     const [rowSelection, setRowSelection] = React.useState({});
     const [isBulkPending, setIsBulkPending] = React.useState(false);
-    // ── dialog state (lifted out of columns) ────────────────────────────────────
-    const [selectedTask, setSelectedTask] = React.useState<Task | null>(null);
-    const [detailsOpen, setDetailsOpen] = React.useState(false);
+
     const [deleteTarget, setDeleteTarget] = React.useState<Task | null>(null)
     const [deleteOpen, setDeleteOpen] = React.useState(false)
     const { data, isPending, isError } = useTasks();
 
-    const handleView = React.useCallback((task: Task) => {
-        setSelectedTask(task);
-        setDetailsOpen(true);
-    }, []);
 
     const { mutate: deleteTask } = useDeleteTask();
     const { mutateAsync: editTask } = useEditTask();
@@ -85,8 +78,8 @@ export default function TaskTable() {
     }, [deleteTarget, deleteTask])
 
     const columns = React.useMemo(
-        () => buildColumns(handleView, handleDeleteClick),
-        [handleView, handleDeleteClick]
+        () => buildColumns(handleDeleteClick),
+        [handleDeleteClick]
     )
 
     // ── derive unique type options from data ─────────────────────────────────────
@@ -311,12 +304,6 @@ export default function TaskTable() {
                 </Button>
             </div>
 
-            {/* ── Task Details Dialog (lives HERE, not inside the dropdown) ───────── */}
-            <TaskDetails
-                task={selectedTask}
-                open={detailsOpen}
-                onOpenChange={setDetailsOpen}
-            />
             <DeleteAlert
                 open={deleteOpen}
                 onOpenChange={setDeleteOpen}

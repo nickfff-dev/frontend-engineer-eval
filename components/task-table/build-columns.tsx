@@ -9,6 +9,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { PhaseProgress } from '@/components/phase-progress'
 import { DripStatus } from '@/components/drip-status'
 import { getDripState } from "@/lib/phases";
+import { useRouter } from "next/navigation";
 
 const statusBadgeVariant: Record<
   Task["status"],
@@ -21,7 +22,6 @@ const statusBadgeVariant: Record<
 
 
 export function buildColumns(
-  onView: (task: Task) => void,
   onDelete: (task: Task) => void
 ): ColumnDef<Task>[] {
   return [
@@ -168,6 +168,7 @@ export function buildColumns(
       enableHiding: false,
       cell: ({ row }) => {
         const task = row.original;
+        const router = useRouter()
         return (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -185,7 +186,7 @@ export function buildColumns(
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               {/* ✅ Trigger the lifted dialog via callback — no nested Dialog here */}
-              <DropdownMenuItem onClick={() => onView(task)}>
+              <DropdownMenuItem onClick={() => router.push(`/tasks/${task.id}`)}>
                 <Eye className="mr-2 h-4 w-4" /> View Details
               </DropdownMenuItem>
               <DropdownMenuItem
