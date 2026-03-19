@@ -39,7 +39,7 @@ import { SkeletonTable } from "../table-skeleton";
 import { ErrorOccurred } from "../error-view";
 import { toast } from "sonner";
 import { DeleteAlert } from "../delete-modal";
-import { UserBulkEditBar } from "../bulk-edit-bar";
+import { UserBulkEditBar } from "../bulk-actions/bulk-edit-bar";
 
 
 const STATUS_OPTIONS: User["status"][] = ["active", "inactive"];

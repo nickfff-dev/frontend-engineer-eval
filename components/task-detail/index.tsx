@@ -24,13 +24,13 @@ import {
     Clock, XCircle, DollarSign,
 } from 'lucide-react'
 import { toast } from 'sonner'
-import { PhaseBuilder } from '@/components/task-composer/phase-builder'
-import { DripFeedConfig } from '@/components/task-composer/drip-feed-config'
-import { PhaseProgress } from '@/components/phase-progress'
-import { DripStatus } from '@/components/drip-status'
+import { PhaseBuilder } from '@/components/phases/phase-builder'
+import { DripFeedConfig } from '@/components/drip/drip-feed-config'
+import { PhaseProgress } from '@/components/phases/phase-progress'
+import { DripStatus } from '@/components/drip/drip-status'
 import { MarkdownEditor } from '@/components/markdown-editor'
 import type { DripFeed, Submission, Task, TaskPhase } from '@/types/types'
-
+import ReactMarkdown from 'react-markdown'
 // ── Submission status icon ────────────────────────────────────────────────────
 
 function StatusIcon({ status }: { status: string }) {
@@ -542,7 +542,7 @@ export default function TaskDetailView({ taskId }: { taskId: string }) {
                                         onClick={() => setEditingDetails(true)}
                                     >
                                         {form.details
-                                            ? <div>{form.details}</div>
+                                            ? <ReactMarkdown>{form.details}</ReactMarkdown>
                                             : <p className="text-muted-foreground italic">Click to add details</p>
                                         }
                                     </div>

@@ -1,5 +1,4 @@
 "use client";
-
 import * as React from "react";
 import {
   type ColumnFiltersState,
@@ -40,7 +39,7 @@ import { ErrorOccurred } from "../error-view";
 import { toast } from "sonner";
 import { useEditTask, useTasks } from "@/hooks/use-tasks";
 import { DeleteAlert } from "../delete-modal";
-import { SubmissionBulkEditBar } from "../bulk-edit-bar";
+import { SubmissionBulkEditBar } from "../bulk-actions/bulk-edit-bar";
 
 const STATUS_OPTIONS: SubmissionStatus[] = ["pending", "approved", "rejected"];
 

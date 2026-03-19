@@ -833,8 +833,8 @@ export function getSubmissionStatusBadgeColor(
 
 
 export function getTasks(filters: Filter<Task>[] = []): Task[] {
-  const stored = localStorage.getItem('tasks');
-  if (!stored) localStorage.setItem('tasks', JSON.stringify(MOCK_TASKS))
+  const stored = localStorage.getItem('tasks_b');
+  if (!stored) localStorage.setItem('tasks_b', JSON.stringify(MOCK_TASKS))
   const data: Task[] = stored ? JSON.parse(stored) : MOCK_TASKS
 
   if (!filters.length) return data
@@ -842,8 +842,8 @@ export function getTasks(filters: Filter<Task>[] = []): Task[] {
 }
 
 export function getSubmissions(filters: Filter<Submission>[] = []): Submission[] {
-  const stored = localStorage.getItem('submissions')
-  if (!stored) localStorage.setItem('submissions', JSON.stringify(MOCK_SUBMISSIONS))
+  const stored = localStorage.getItem('submissions_b')
+  if (!stored) localStorage.setItem('submissions_b', JSON.stringify(MOCK_SUBMISSIONS))
   const data: Submission[] = stored ? JSON.parse(stored) : MOCK_SUBMISSIONS
 
   if (!filters.length) return data
@@ -854,38 +854,38 @@ export function getSubmissions(filters: Filter<Submission>[] = []): Submission[]
 
 export function addTask(task: Task) {
   const tasks = getTasks();
-  localStorage.setItem('tasks', JSON.stringify([...tasks, task]))
+  localStorage.setItem('tasks_b', JSON.stringify([...tasks, task]))
 }
 
 export function addSubmission(submission: Submission) {
   const submissions = getSubmissions();
-  localStorage.setItem('submissions', JSON.stringify([...submissions, submission]))
+  localStorage.setItem('submissions_b', JSON.stringify([...submissions, submission]))
 }
 
 export function editTask(id: string, task_data: Partial<Task>) {
   const tasks = getTasks();
   const updated = tasks.map((t) => t.id === id ? { ...t, ...task_data } : t);
-  localStorage.setItem('tasks', JSON.stringify(updated));
+  localStorage.setItem('tasks_b', JSON.stringify(updated));
   return updated.find((t) => t.id === id)!;
 }
 
 export function editSubmission(id: string, submission_data: Partial<Submission>) {
   const submissions = getSubmissions();
   const updated = submissions.map((s) => s.id === id ? { ...s, ...submission_data } : s);
-  localStorage.setItem('submissions', JSON.stringify(updated));
+  localStorage.setItem('submissions_b', JSON.stringify(updated));
   return updated.find((s) => s.id === id)!;
 }
 
 export function deleteTask(id: string) {
   const tasks = getTasks();
   const submissions = getSubmissions();
-  localStorage.setItem('submissions', JSON.stringify(submissions.filter((s) => s.taskId !== id)));
-  localStorage.setItem('tasks', JSON.stringify([...(tasks.filter(task => task.id !== id))]))
+  localStorage.setItem('submissions_b', JSON.stringify(submissions.filter((s) => s.taskId !== id)));
+  localStorage.setItem('tasks_b', JSON.stringify([...(tasks.filter(task => task.id !== id))]))
 }
 
 export function deleteSubmission(id: string) {
   const submissions = getSubmissions();
-  localStorage.setItem('submissions', JSON.stringify([...(submissions.filter(submission => submission.id !== id))]))
+  localStorage.setItem('submissions_b', JSON.stringify([...(submissions.filter(submission => submission.id !== id))]))
 }
 
 export function getUsers(filters: Filter<User>[] = []): User[] {
@@ -915,7 +915,7 @@ export function deleteUser(id: string): void {
   const data = getUsers();
   const submissions = getSubmissions();
 
-  localStorage.setItem('submissions', JSON.stringify(submissions.filter((u) => u.workerId !== id)))
+  localStorage.setItem('submissions_b', JSON.stringify(submissions.filter((u) => u.workerId !== id)))
   localStorage.setItem('users', JSON.stringify(data.filter((u) => u.id !== id)))
 }
 

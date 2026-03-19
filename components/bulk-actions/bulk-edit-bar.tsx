@@ -18,8 +18,6 @@ interface BulkBarBaseProps {
     isPending: boolean
 }
 
-// ── Task Bulk Edit ────────────────────────────────────────────────────────────
-
 interface TaskBulkEditBarProps extends BulkBarBaseProps {
     onApply: (changes: { amount?: number; campaignId?: string, reward?: number }) => void
 }

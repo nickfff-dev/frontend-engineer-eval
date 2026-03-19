@@ -20,9 +20,9 @@ import { toast } from 'sonner'
 import { useAddTask } from '@/hooks/use-tasks'
 import type { Task, TaskPhase, DripFeed } from '@/types/types'
 import { MarkdownEditor } from '@/components/markdown-editor'
-import { PhaseBuilder } from '@/components/task-composer/phase-builder'
-import { DripFeedConfig } from '@/components/task-composer/drip-feed-config'
-import { BulkUpload } from '@/components/task-composer/bulk-upload'
+import { PhaseBuilder } from '@/components/phases/phase-builder'
+import { DripFeedConfig } from '@/components/drip/drip-feed-config'
+import { BulkUpload } from '@/components/bulk-actions/bulk-upload'
 
 const taskSchema = z.object({
   type: z.enum(['social_media_posting', 'email_sending', 'social_media_liking']),

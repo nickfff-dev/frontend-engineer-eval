@@ -38,7 +38,8 @@ import { SkeletonTable } from "../table-skeleton";
 import { ErrorOccurred } from "../error-view";
 import { toast } from "sonner";
 import { DeleteAlert } from "../delete-modal";
-import { BulkEditBar } from "../bulk-edit-bar";
+import { BulkEditBar } from "../bulk-actions/bulk-edit-bar";
+import { useRouter } from "next/navigation";
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 const STATUS_OPTIONS = ["active", "completed", "archived"] as const;
@@ -55,11 +56,9 @@ export default function TaskTable() {
     const [deleteTarget, setDeleteTarget] = React.useState<Task | null>(null)
     const [deleteOpen, setDeleteOpen] = React.useState(false)
     const { data, isPending, isError } = useTasks();
-
-
     const { mutate: deleteTask } = useDeleteTask();
     const { mutateAsync: editTask } = useEditTask();
-
+    const router = useRouter()
     const handleDeleteClick = React.useCallback((task: Task) => {
         setDeleteTarget(task)
         setDeleteOpen(true)
@@ -255,13 +254,19 @@ export default function TaskTable() {
                                 <TableRow
                                     key={row.id}
                                     data-state={row.getIsSelected() && "selected"}
+                                    className="cursor-pointer"
+                                    onClick={() => router.push(`/tasks/${row.original.id}`)}
                                 >
                                     {row.getVisibleCells().map((cell) => (
-                                        <TableCell key={cell.id}>
-                                            {flexRender(
-                                                cell.column.columnDef.cell,
-                                                cell.getContext()
-                                            )}
+                                        <TableCell
+                                            key={cell.id}
+                                            // Stop checkbox column clicks from navigating
+                                            onClick={cell.column.id === 'select' || cell.column.id === 'actions'
+                                                ? (e) => e.stopPropagation()
+                                                : undefined
+                                            }
+                                        >
+                                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
                                         </TableCell>
                                     ))}
                                 </TableRow>

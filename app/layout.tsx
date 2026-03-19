@@ -12,7 +12,7 @@ const _robotoMono = Roboto_Mono({ weight: ["100", "200", "300", "400", "500", "6
 
 export const metadata: Metadata = {
   title: "Micro Tasks Platform",
-  description: 'Internal freelancing microlearning platform',
+  description: 'Internal freelancing microtasking platform',
 };
 
 export default function RootLayout({

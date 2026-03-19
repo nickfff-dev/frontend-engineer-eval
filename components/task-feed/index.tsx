@@ -2,10 +2,8 @@
 import { useState, useMemo, useId } from 'react'
 import { getSubmissions, getTaskTypeLabel, getTaskSlots } from '@/lib/mock-data'
 import { getActivePhase, getDripState, advancePhases } from '@/lib/phases'
-import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
+import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Progress } from '@/components/ui/progress'
 import {
     Select, SelectContent, SelectItem,
     SelectTrigger, SelectValue,
@@ -17,262 +15,28 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Skeleton } from '@/components/ui/skeleton'
-import {
-    ArrowRight, DollarSign, Users, Clock,
-    CheckCircle2, XCircle, Loader2, Droplets,
-    ChevronRight, Layers,
-} from 'lucide-react'
+import { CheckCircle2, XCircle, Loader2, Droplets, Layers } from 'lucide-react'
 import { toast } from 'sonner'
-import type { TaskType, Submission, User, TaskPhase } from '@/types/types'
+import type { TaskType, Submission, User } from '@/types/types'
 import { useTasks, useEditTask } from '@/hooks/use-tasks'
 import { useAddSubmission } from '@/hooks/use-submissions'
 import type { Task } from '@/types/types'
 import { useQueryState, parseAsStringLiteral } from 'nuqs'
-
+import { ActivePhaseBanner, DripBanner } from '../phases/pill-assest';
+import { TaskCardSkeleton } from './skeleton';
+import { TaskCard } from './task-card';
+import { Badge } from '../ui/badge';
+import ReactMarkdown from 'react-markdown'
 
 type SortOption = 'latest' | 'reward'
 type FilterType = 'all' | TaskType
-
 const TASK_TYPE_OPTIONS: { value: FilterType; label: string }[] = [
     { value: 'all', label: 'All Tasks' },
     { value: 'social_media_posting', label: 'Social Media Posting' },
     { value: 'email_sending', label: 'Email Sending' },
     { value: 'social_media_liking', label: 'Social Media Liking' },
 ]
-
 const EMPTY_FORM = { postUrl: '', emailContent: '', evidenceScreenshot: '' }
-
-// ── Skeletons ─────────────────────────────────────────────────────────────────
-
-function TaskCardSkeleton() {
-    return (
-        <Card className="p-5 space-y-3">
-            <Skeleton className="h-5 w-3/4" />
-            <Skeleton className="h-4 w-full" />
-            <Skeleton className="h-4 w-2/3" />
-            <div className="flex justify-between">
-                <Skeleton className="h-6 w-20" />
-                <Skeleton className="h-6 w-16" />
-            </div>
-            <Skeleton className="h-9 w-full" />
-        </Card>
-    )
-}
-
-// ── Phase pill shown on card ──────────────────────────────────────────────────
-
-function PhasePill({ phase, total }: { phase: TaskPhase; total: number }) {
-    const pct = phase.slots > 0 ? Math.round((phase.submissionsReceived / phase.slots) * 100) : 0
-    return (
-        <div className="space-y-1">
-            <div className="flex items-center justify-between text-xs">
-                <span className="flex items-center gap-1 text-primary font-medium">
-                    <Layers className="h-3 w-3" />
-                    Phase {phase.phaseIndex}/{total}
-                </span>
-                <span className="text-muted-foreground">{phase.submissionsReceived}/{phase.slots}</span>
-            </div>
-            <Progress value={pct} className="h-1" />
-        </div>
-    )
-}
-
-// ── Drip pill shown on card ───────────────────────────────────────────────────
-
-function DripPill({ task }: { task: Task }) {
-    const { state, nextReleaseLabel } = getDripState(task)
-    if (!task.dripFeed?.enabled) return null
-    return (
-        <Badge
-            variant={state === 'active' ? 'default' : state === 'waiting' ? 'secondary' : 'outline'}
-            className="text-xs gap-1"
-        >
-            <Droplets className="h-2.5 w-2.5" />
-            {state === 'waiting' ? `Next in ${nextReleaseLabel}` : state === 'completed' ? 'Slots full' : 'Drip active'}
-        </Badge>
-    )
-}
-
-// ── Task Card — mobile-first ──────────────────────────────────────────────────
-
-interface TaskCardProps {
-    task: Task
-    isCompleted: boolean
-    onSelect: (task: Task) => void
-}
-
-function TaskCard({ task, isCompleted, onSelect }: TaskCardProps) {
-    const { maxSlots, slotsRemaining, isFull } = getTaskSlots(task)
-    const activePhase = getActivePhase(task)
-    const dripState = task.dripFeed?.enabled ? getDripState(task) : null
-    const dripBlocked = dripState?.state === 'waiting' || dripState?.state === 'completed'
-    const effectiveReward = activePhase ? activePhase.reward : task.reward
-    const disabled = (isCompleted && !task.allowMultipleSubmissions) || isFull || dripBlocked
-
-    return (
-        <Card
-            className={`flex flex-col transition-all duration-200 ${disabled
-                    ? 'opacity-60 cursor-not-allowed bg-muted/30'
-                    : 'hover:border-primary/40 hover:shadow-md cursor-pointer group'
-                }`}
-            onClick={() => !disabled && onSelect(task)}
-        >
-            <CardHeader className="pb-2 p-4">
-                <div className="flex items-start justify-between gap-2">
-                    <h3 className={`font-semibold leading-snug text-sm ${disabled ? 'text-muted-foreground' : 'text-slate-900 group-hover:text-primary transition-colors'
-                        }`}>
-                        {task.title}
-                    </h3>
-                    <div className="flex flex-col items-end gap-1 shrink-0">
-                        {isCompleted && !task.allowMultipleSubmissions && (
-                            <Badge variant="secondary" className="text-xs gap-1">
-                                <CheckCircle2 className="h-2.5 w-2.5" /> Done
-                            </Badge>
-                        )}
-                        {isFull && (
-                            <Badge variant="destructive" className="text-xs">Full</Badge>
-                        )}
-                        <Badge variant="outline" className="text-xs">
-                            {getTaskTypeLabel(task.type).split(' ')[0]}
-                        </Badge>
-                    </div>
-                </div>
-                <p className="text-xs text-muted-foreground line-clamp-2 mt-1">{task.description}</p>
-            </CardHeader>
-
-            <CardContent className="flex-1 pb-2 px-4 space-y-2">
-                {/* Phase progress */}
-                {task.phases?.length && activePhase && (
-                    <PhasePill phase={activePhase} total={task.phases.length} />
-                )}
-
-                {/* Drip badge */}
-                {task.dripFeed?.enabled && <DripPill task={task} />}
-
-                {/* Slots */}
-                <div className="flex items-center justify-between text-xs text-muted-foreground border-t border-slate-100 pt-2">
-                    <span className="flex items-center gap-1">
-                        <Users className="h-3 w-3" />
-                        {task.submissionsReceived}/{maxSlots} slots
-                    </span>
-                    <span className={`font-medium ${isFull ? 'text-destructive' : slotsRemaining <= 3 ? 'text-amber-600' : 'text-emerald-600'
-                        }`}>
-                        {isFull ? 'Full' : `${slotsRemaining} left`}
-                    </span>
-                </div>
-
-                <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                    <Clock className="h-3 w-3" />
-                    {task.allowMultipleSubmissions ? 'Multiple allowed' : 'One per person'}
-                </div>
-            </CardContent>
-
-            <CardFooter className="flex items-center justify-between pt-0 px-4 pb-4">
-                <div className="flex items-center gap-0.5 font-bold">
-                    <DollarSign className="h-4 w-4 text-green-600" />
-                    <span className="text-green-700 text-lg">{effectiveReward}</span>
-                    {activePhase && (
-                        <span className="text-xs text-muted-foreground font-normal ml-1">this phase</span>
-                    )}
-                </div>
-                <Button
-                    size="sm"
-                    disabled={disabled}
-                    className="h-8 text-xs"
-                    onClick={(e) => { e.stopPropagation(); if (!disabled) onSelect(task) }}
-                >
-                    {disabled
-                        ? dripBlocked ? 'Waiting' : isFull ? 'Full' : 'Done'
-                        : <><span>Submit</span><ArrowRight className="ml-1 h-3 w-3" /></>
-                    }
-                </Button>
-            </CardFooter>
-        </Card>
-    )
-}
-
-// ── Active phase banner in submit dialog ──────────────────────────────────────
-
-function ActivePhaseBanner({ task }: { task: Task }) {
-    const phase = getActivePhase(task)
-    if (!task.phases?.length || !phase) return null
-    const pct = Math.round((phase.submissionsReceived / phase.slots) * 100)
-
-    return (
-        <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-3">
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                    <Layers className="h-4 w-4 text-primary" />
-                    <span className="text-sm font-semibold text-primary">
-                        Phase {phase.phaseIndex} of {task.phases.length} — {phase.phaseName}
-                    </span>
-                </div>
-                <span className="text-sm font-bold text-green-700">${phase.reward}</span>
-            </div>
-            <p className="text-sm text-slate-700">{phase.instructions}</p>
-            <div className="space-y-1">
-                <div className="flex justify-between text-xs text-muted-foreground">
-                    <span>{phase.submissionsReceived} / {phase.slots} slots filled</span>
-                    <span>{pct}%</span>
-                </div>
-                <Progress value={pct} className="h-1.5" />
-            </div>
-            {/* Past phases the worker submitted in */}
-            {task.phases.filter((p) => p.status === 'completed').length > 0 && (
-                <details className="text-xs text-muted-foreground cursor-pointer">
-                    <summary className="flex items-center gap-1 hover:text-foreground transition-colors">
-                        <ChevronRight className="h-3 w-3" />
-                        View completed phases
-                    </summary>
-                    <div className="mt-2 space-y-1 pl-4 border-l border-border">
-                        {task.phases
-                            .filter((p) => p.status === 'completed')
-                            .map((p) => (
-                                <div key={p.id} className="flex items-center gap-2">
-                                    <CheckCircle2 className="h-3 w-3 text-emerald-500" />
-                                    <span>Phase {p.phaseIndex} — {p.phaseName} ({p.slots} slots)</span>
-                                </div>
-                            ))}
-                    </div>
-                </details>
-            )}
-        </div>
-    )
-}
-
-// ── Drip banner in submit dialog ──────────────────────────────────────────────
-
-function DripBanner({ task }: { task: Task }) {
-    if (!task.dripFeed?.enabled) return null
-    const { state, nextReleaseLabel, slotsAvailable } = getDripState(task)
-    const drip = task.dripFeed
-    const total = Math.floor(task.amount / task.reward)
-    const pct = Math.round((drip.totalReleased / total) * 100)
-
-    return (
-        <div className="rounded-lg border bg-sky-50 border-sky-200 p-3 space-y-2">
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-sm font-medium text-sky-800">
-                    <Droplets className="h-4 w-4" /> Drip Feed
-                </div>
-                <Badge
-                    variant={state === 'active' ? 'default' : state === 'waiting' ? 'secondary' : 'outline'}
-                    className="text-xs capitalize"
-                >
-                    {state === 'waiting' ? `Next in ${nextReleaseLabel}` : state}
-                </Badge>
-            </div>
-            <Progress value={pct} className="h-1.5" />
-            <div className="flex justify-between text-xs text-sky-700">
-                <span>{drip.totalReleased} / {total} released</span>
-                <span>{slotsAvailable} available now</span>
-            </div>
-        </div>
-    )
-}
-
-// ── Main ──────────────────────────────────────────────────────────────────────
 
 export default function TaskFeed({ user }: { user: User }) {
     const [sortBy, setSortBy] = useQueryState(
@@ -283,7 +47,14 @@ export default function TaskFeed({ user }: { user: User }) {
         'type',
         parseAsStringLiteral(['all', 'social_media_posting', 'email_sending', 'social_media_liking'] as const).withDefault('all')
     )
-
+    const [showPhased, setShowPhased] = useQueryState(
+        'phased',
+        parseAsStringLiteral(['all', 'phased', 'standard'] as const).withDefault('all')
+    )
+    const [showDrip, setShowDrip] = useQueryState(
+        'drip',
+        parseAsStringLiteral(['all', 'drip', 'standard'] as const).withDefault('all')
+    )
     const [selectedTask, setSelectedTask] = useState<Task | null>(null)
     const [submissionData, setSubmissionData] = useState(EMPTY_FORM)
     const [submittedRefreshKey, setSubmittedRefreshKey] = useState(0)
@@ -309,15 +80,21 @@ export default function TaskFeed({ user }: { user: User }) {
 
     const filteredTasks = useMemo(() => {
         if (!data) return []
-        const active = data.filter(
-            (t) => t.status === 'active' && (filterType === 'all' || t.type === filterType)
-        )
+        const active = data.filter((t) => {
+            if (t.status !== 'active') return false
+            if (filterType !== 'all' && t.type !== filterType) return false
+            if (showPhased === 'phased' && !t.phases?.length) return false
+            if (showPhased === 'standard' && t.phases?.length) return false
+            if (showDrip === 'drip' && !t.dripFeed?.enabled) return false
+            if (showDrip === 'standard' && t.dripFeed?.enabled) return false
+            return true
+        })
         return [...active].sort((a, b) =>
             sortBy === 'reward'
                 ? b.reward - a.reward
                 : new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
         )
-    }, [data, sortBy, filterType])
+    }, [data, sortBy, filterType, showPhased, showDrip])
 
     const handleClose = () => {
         setSelectedTask(null)
@@ -450,7 +227,8 @@ export default function TaskFeed({ user }: { user: User }) {
             {/* Filters — stacked on mobile */}
             <Card>
                 <CardContent className="pt-4 pb-4">
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                        {/* Existing type filter */}
                         <div className="space-y-1.5">
                             <Label className="text-xs">Filter by Type</Label>
                             <Select value={filterType} onValueChange={(val) => setFilterType(val as FilterType)}>
@@ -462,6 +240,8 @@ export default function TaskFeed({ user }: { user: User }) {
                                 </SelectContent>
                             </Select>
                         </div>
+
+                        {/* Existing sort */}
                         <div className="space-y-1.5">
                             <Label className="text-xs">Sort By</Label>
                             <Select value={sortBy} onValueChange={(val) => setSortBy(val as SortOption)}>
@@ -472,7 +252,69 @@ export default function TaskFeed({ user }: { user: User }) {
                                 </SelectContent>
                             </Select>
                         </div>
+
+                        {/* ✅ Phase filter */}
+                        <div className="space-y-1.5">
+                            <Label className="text-xs flex items-center gap-1">
+                                <Layers className="h-3 w-3" /> Phases
+                            </Label>
+                            <Select value={showPhased} onValueChange={(val) => setShowPhased(val as any)}>
+                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All Tasks</SelectItem>
+                                    <SelectItem value="phased">Phased Only</SelectItem>
+                                    <SelectItem value="standard">Standard Only</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        {/* ✅ Drip filter */}
+                        <div className="space-y-1.5">
+                            <Label className="text-xs flex items-center gap-1">
+                                <Droplets className="h-3 w-3" /> Drip Feed
+                            </Label>
+                            <Select value={showDrip} onValueChange={(val) => setShowDrip(val as any)}>
+                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All Tasks</SelectItem>
+                                    <SelectItem value="drip">Drip Only</SelectItem>
+                                    <SelectItem value="standard">No Drip</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
                     </div>
+
+                    {/* Active filter badges + clear all */}
+                    {(filterType !== 'all' || showPhased !== 'all' || showDrip !== 'all') && (
+                        <div className="flex items-center gap-2 mt-3 flex-wrap">
+                            <span className="text-xs text-muted-foreground">Active filters:</span>
+                            {filterType !== 'all' && (
+                                <Badge variant="secondary" className="text-xs gap-1 cursor-pointer"
+                                    onClick={() => setFilterType('all')}>
+                                    {TASK_TYPE_OPTIONS.find(o => o.value === filterType)?.label} ×
+                                </Badge>
+                            )}
+                            {showPhased !== 'all' && (
+                                <Badge variant="secondary" className="text-xs gap-1 cursor-pointer"
+                                    onClick={() => setShowPhased('all')}>
+                                    {showPhased === 'phased' ? 'Phased only' : 'Standard only'} ×
+                                </Badge>
+                            )}
+                            {showDrip !== 'all' && (
+                                <Badge variant="secondary" className="text-xs gap-1 cursor-pointer"
+                                    onClick={() => setShowDrip('all')}>
+                                    {showDrip === 'drip' ? 'Drip only' : 'No drip'} ×
+                                </Badge>
+                            )}
+                            <button
+                                className="text-xs text-muted-foreground hover:text-foreground underline ml-1 cursor-pointer"
+                                onClick={() => { setFilterType('all'); setShowPhased('all'); setShowDrip('all') }}
+                            >
+                                Clear all
+                            </button>
+                        </div>
+                    )}
+
                     {!isPending && (
                         <p className="mt-3 text-xs text-muted-foreground">
                             Showing <span className="font-medium text-foreground">{filteredTasks.length}</span> of{' '}
@@ -546,7 +388,7 @@ export default function TaskFeed({ user }: { user: User }) {
                                 <div>
                                     <p className="text-sm font-medium mb-2">Task Details</p>
                                     <div className="prose prose-sm max-w-none text-slate-600 rounded-lg bg-muted/20 px-4 py-3">
-                                        {selectedTask.details}
+                                    <ReactMarkdown children={selectedTask.details || "No details provided."} />
                                     </div>
                                 </div>
                             )}

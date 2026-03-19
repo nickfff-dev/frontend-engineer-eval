@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
-import { Droplets, Clock, CheckCircle2 } from 'lucide-react'
+import { Droplets } from 'lucide-react'
 import type { Task } from '@/types/types'
 import { getDripState } from '@/lib/phases'
 

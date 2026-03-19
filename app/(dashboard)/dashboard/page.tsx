@@ -6,10 +6,10 @@ import { Button } from '@/components/ui/button'
 import { ArrowRight } from 'lucide-react'
 import Link from 'next/link';
 import { RecentTasks } from '@/components/recent-tasks';
-import { MetricsGrid } from '@/components/metrics-grid';
+import { MetricsGrid } from '@/components/stats/admin-stats';
 import { Unauthenticated } from '@/components/unauthenticated';
 import Loading from '@/components/loader';
-import WorkerMetrics from '@/components/worker-metrics';
+import WorkerMetrics from '@/components/stats/worker-stats';
 
 export default function DashboardPage() {
   const { user, isLoading } = useAuth();

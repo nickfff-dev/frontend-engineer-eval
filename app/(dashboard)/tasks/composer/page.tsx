@@ -1,5 +1,5 @@
 'use client'
-import TaskComposer from '@/components/task-composer/task-compose'
+import TaskComposer from '@/components/task-composer'
 import { Unauthenticated } from '@/components/unauthenticated';
 import { Unauthorized } from '@/components/unauthorized';
 import { useAuth } from '@/context/AuthContext'
